@@ -1,0 +1,275 @@
+import React, { useState } from 'react';
+import { X, Check, XIcon, AlertCircle, FileText } from 'lucide-react';
+import { useWorkflow } from '../context/WorkflowContext';
+
+interface ReviewRequestModalProps {
+  requestId: string;
+  onClose: () => void;
+}
+
+export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalProps) {
+  const { requests, updateRequest, approveRequest, rejectRequest } = useWorkflow();
+  const [action, setAction] = useState<'review' | 'approve' | 'reject'>('review');
+  const [notes, setNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  const request = requests.find(req => req.id === requestId);
+  if (!request) return null;
+
+  const handleStartReview = () => {
+    updateRequest(requestId, { status: 'in_review' });
+    setAction('review');
+  };
+
+  const handleApprove = () => {
+    approveRequest(requestId, notes);
+    onClose();
+  };
+
+  const handleReject = () => {
+    if (rejectionReason.trim()) {
+      rejectRequest(requestId, rejectionReason);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-100 rounded-lg p-2">
+              <FileText className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Review Request #{request.id}</h2>
+              <p className="text-gray-600">{request.customerName}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {/* Request Status */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between">
+              <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
+                request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                request.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-blue-100 text-blue-800'
+              }`}>
+                {request.status.replace('_', ' ').toUpperCase()}
+              </span>
+              <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                request.priority === 'high' ? 'bg-red-100 text-red-800' :
+                request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-green-100 text-green-800'
+              }`}>
+                {request.priority.toUpperCase()} PRIORITY
+              </span>
+            </div>
+          </div>
+
+          {/* Request Details Grid */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Name:</span>
+                    <p className="text-gray-900">{request.customerName}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Account Number:</span>
+                    <p className="text-gray-900 font-mono">{request.accountNumber}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Update Type:</span>
+                    <p className="text-gray-900 capitalize">{request.updateType.replace('_', ' ')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Request Information</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Initiated by:</span>
+                    <p className="text-gray-900">{request.initiatorName}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Created:</span>
+                    <p className="text-gray-900">{new Date(request.createdAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">Last Updated:</span>
+                    <p className="text-gray-900">{new Date(request.updatedAt).toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Fields to Update</h3>
+                <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                  {Object.entries(request.fieldsToUpdate).map(([field, value]) => 
+                    value && (
+                      <div key={field} className="flex justify-between items-start">
+                        <span className="text-sm font-medium text-gray-700 capitalize">
+                          {field.replace(/([A-Z])/g, ' $1')}:
+                        </span>
+                        <span className="text-sm text-gray-900 text-right max-w-xs break-words">
+                          {value}
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              {request.reviewNotes && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Previous Review Notes</h3>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-sm text-green-800">{request.reviewNotes}</p>
+                  </div>
+                </div>
+              )}
+
+              {request.rejectionReason && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Rejection Reason</h3>
+                  <div className="bg-red-50 rounded-lg p-4">
+                    <p className="text-sm text-red-800">{request.rejectionReason}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Customer Instruction */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Instruction</h3>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <p className="text-yellow-800">{request.customerInstruction}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          {request.status === 'pending' && (
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              <button
+                onClick={handleStartReview}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2"
+              >
+                <FileText className="h-5 w-5" />
+                <span>Start Review</span>
+              </button>
+            </div>
+          )}
+
+          {request.status === 'in_review' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center space-x-4">
+                <button
+                  onClick={() => setAction('approve')}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                    action === 'approve' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  }`}
+                >
+                  <Check className="h-5 w-5" />
+                  <span>Approve</span>
+                </button>
+                <button
+                  onClick={() => setAction('reject')}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                    action === 'reject' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
+                >
+                  <XIcon className="h-5 w-5" />
+                  <span>Reject</span>
+                </button>
+              </div>
+
+              {action === 'approve' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Approval Notes (Optional)
+                  </label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
+                    placeholder="Add any notes about the approval..."
+                  />
+                  <div className="mt-4 flex items-center justify-end space-x-3">
+                    <button
+                      onClick={() => setAction('review')}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleApprove}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Confirm Approval
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {action === 'reject' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rejection Reason *
+                  </label>
+                  <textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                    placeholder="Please explain why this request is being rejected..."
+                    required
+                  />
+                  <div className="mt-4 flex items-center justify-end space-x-3">
+                    <button
+                      onClick={() => setAction('review')}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleReject}
+                      disabled={!rejectionReason.trim()}
+                      className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    >
+                      Confirm Rejection
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
