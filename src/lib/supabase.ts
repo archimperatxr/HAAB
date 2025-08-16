@@ -55,36 +55,70 @@ export interface AuditLog {
   user?: User;
 }
 
-// Auth helper functions
+/**
+ * Signs a user in using Supabase's built-in authentication.
+ * This is a secure alternative to the previous demo function.
+ * @param username The user's username (treated as the email address).
+ * @param password The user's password.
+ * @returns A promise that resolves with the User object on success.
+ * @throws An error if the sign-in fails.
+ */
 export const signInWithPassword = async (username: string, password: string) => {
-  // For demo purposes, we'll simulate authentication
-  // In production, you would use Supabase Auth
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .eq('status', 'active');
-    //.single();
+  // Use Supabase's native authentication method.
+  // NOTE: Supabase Auth uses 'email' as the primary identifier.
+  // We'll map the 'username' field to 'email' here.
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: username,
+    password: password,
+  });
 
-  if (error || !user) {
-    throw new Error('Invalid credentials');
+  if (error) {
+    // Supabase returns specific error messages that are more secure
+    // than exposing internal details. We can re-throw this.
+    throw new Error(error.message);
   }
 
-  // Update last login
-  await supabase
-    .from('users')
-    .update({ last_login: new Date().toISOString() })
-    .eq('id', user.id);
+  // The 'user' object from auth is slightly different from our custom User interface.
+  // We'll need to fetch the user details from our public 'users' table
+  // to get their full_name, role, etc.
+  if (data.user) {
+    const { data: userDetails, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
 
-  return user;
+    if (userError || !userDetails) {
+      throw new Error('Failed to retrieve user details.');
+    }
+
+    return userDetails;
+  }
+
+  // Fallback in case the user object is not available
+  throw new Error('Login failed: User object not found.');
 };
 
+/**
+ * Signs the currently authenticated user out.
+ * @returns A promise that resolves when the sign-out is complete.
+ */
 export const signOut = async () => {
-  // Clear any local session data
-  localStorage.removeItem('haab-user');
+  // Use Supabase's native sign out method to clear the session.
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    console.error('Failed to sign out:', error);
+  }
 };
 
-// Audit logging
+/**
+ * Creates an audit log entry for a specific user action.
+ * @param userId The ID of the user performing the action.
+ * @param action The action performed (e.g., 'created_request').
+ * @param resourceType The type of resource the action was performed on.
+ * @param resourceId The ID of the resource (optional).
+ * @param details Additional details about the action (optional).
+ */
 export const createAuditLog = async (
   userId: string,
   action: string,
