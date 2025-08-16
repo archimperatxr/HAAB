@@ -20,7 +20,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     try {
       // For demo purposes, we accept any password
-      if (password === 'password123') {
+      if (password !== 'password123') {
         const user = await signInWithPassword(username, password);
         onLogin(user);
       } else {
