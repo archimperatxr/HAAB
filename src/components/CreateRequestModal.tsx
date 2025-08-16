@@ -86,7 +86,7 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
         fields_to_update: formData.fields_to_update,
         customer_instruction: formData.customer_instruction,
         initiator_id: user.id,
-        assigned_supervisor_id: formData.assigned_supervisor_id,
+        assigned_supervisor_id: 'bcbcc40f-0cc4-4fce-9ca9-9be9ef612b30',
         status: 'pending',
         priority: formData.priority,
         attachments: formData.attachments
