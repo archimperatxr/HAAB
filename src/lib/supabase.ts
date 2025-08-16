@@ -85,7 +85,7 @@ export const signInWithPassword = async (username: string, password: string) => 
     const { data: userDetails, error: userError } = await supabase
       .from('users')
       .select('*')
-      .eq('id', data.user.id)
+      .eq('user_id', data.user.id)
       .single();
 
     if (userError || !userDetails) {
