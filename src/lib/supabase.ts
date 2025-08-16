@@ -63,8 +63,8 @@ export const signInWithPassword = async (username: string, password: string) => 
     .from('users')
     .select('*')
     .eq('username', username)
-    .eq('status', 'active')
-    .single();
+    .eq('status', 'active');
+    //.single();
 
   if (error || !user) {
     throw new Error('Invalid credentials');
