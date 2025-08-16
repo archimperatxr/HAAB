@@ -21,8 +21,8 @@ export function Dashboard({ user }: DashboardProps) {
 
   const getStats = () => {
     const myRequests = requests.filter(req => 
-      user.role === 'initiator' ? req.initiatorId === user.id :
-      user.role === 'supervisor' ? req.assignedSupervisorId === user.id :
+      user.role === 'initiator' ? req.initiator_id === user.id :
+      user.role === 'supervisor' ? req.assigned_supervisor_id === user.id :
       true
     );
 
@@ -54,11 +54,11 @@ export function Dashboard({ user }: DashboardProps) {
   const RecentActivity = () => {
     const recentRequests = requests
       .filter(req => 
-        user.role === 'initiator' ? req.initiatorId === user.id :
-        user.role === 'supervisor' ? req.assignedSupervisorId === user.id :
+        user.role === 'initiator' ? req.initiator_id === user.id :
+        user.role === 'supervisor' ? req.assigned_supervisor_id === user.id :
         true
       )
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
     return (
@@ -74,7 +74,7 @@ export function Dashboard({ user }: DashboardProps) {
                   <FileText className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="font-medium text-gray-900">#{request.id}</p>
-                    <p className="text-sm text-gray-600">{request.customerName}</p>
+                    <p className="text-sm text-gray-600">{request.customer_name}</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -87,7 +87,7 @@ export function Dashboard({ user }: DashboardProps) {
                     {request.status.replace('_', ' ').toUpperCase()}
                   </span>
                   <p className="text-xs text-gray-500 mt-1">
-                    {new Date(request.createdAt).toLocaleDateString()}
+                    {new Date(request.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function Dashboard({ user }: DashboardProps) {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-2">
-          Welcome back, {user.fullName}. Here's your workflow overview.
+          Welcome back, {user.full_name}. Here's your workflow overview.
         </p>
       </div>
 

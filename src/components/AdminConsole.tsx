@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../App';
 import { Users, Settings, Shield, Activity, Plus, Edit, Trash2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface AdminConsoleProps {
   user: User;
@@ -22,7 +23,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
   const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'audit' | 'settings'>('users');
   const [users, setUsers] = useState<UserAccount[]>([
     {
-      id: '1',
+      id: '11111111-1111-1111-1111-111111111111',
       username: 'john.doe',
       fullName: 'John Doe',
       email: 'john.doe@haab.com',
@@ -33,7 +34,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       createdAt: '2024-01-15T00:00:00Z'
     },
     {
-      id: '2',
+      id: '22222222-2222-2222-2222-222222222222',
       username: 'sarah.manager',
       fullName: 'Sarah Manager',
       email: 'sarah.manager@haab.com',
@@ -44,7 +45,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       createdAt: '2024-01-10T00:00:00Z'
     },
     {
-      id: '3',
+      id: '33333333-3333-3333-3333-333333333333',
       username: 'admin.user',
       fullName: 'Admin User',
       email: 'admin@haab.com',
@@ -55,7 +56,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       createdAt: '2024-01-05T00:00:00Z'
     },
     {
-      id: '4',
+      id: '44444444-4444-4444-4444-444444444444',
       username: 'jane.smith',
       fullName: 'Jane Smith',
       email: 'jane.smith@haab.com',

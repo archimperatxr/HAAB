@@ -9,16 +9,16 @@ interface SupervisorWorkspaceProps {
 }
 
 export function SupervisorWorkspace({ user }: SupervisorWorkspaceProps) {
-  const { requests } = useWorkflow();
+  const { requests, loading, error } = useWorkflow();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
 
-  const supervisorRequests = requests.filter(req => req.assignedSupervisorId === user.id);
+  const supervisorRequests = requests.filter(req => req.assigned_supervisor_id === user.id);
   
   const filteredRequests = supervisorRequests.filter(req => {
-    const matchesSearch = req.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         req.accountNumber.includes(searchTerm) ||
+    const matchesSearch = req.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         req.account_number.includes(searchTerm) ||
                          req.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -150,6 +150,19 @@ export function SupervisorWorkspace({ user }: SupervisorWorkspaceProps) {
       </div>
 
       {/* Requests List */}
+      {loading && (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading requests...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-800">Error: {error}</p>
+        </div>
+      )}
+
       {filteredRequests.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -178,8 +191,8 @@ export function SupervisorWorkspace({ user }: SupervisorWorkspaceProps) {
                           {request.priority.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">{request.customerName} • {request.accountNumber}</p>
-                      <p className="text-sm text-gray-500">Initiated by {request.initiatorName}</p>
+                      <p className="text-sm text-gray-600">{request.customer_name} • {request.account_number}</p>
+                      <p className="text-sm text-gray-500">Initiated by {request.initiator?.full_name}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -192,27 +205,27 @@ export function SupervisorWorkspace({ user }: SupervisorWorkspaceProps) {
                 <div className="grid md:grid-cols-3 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Update Type</p>
-                    <p className="font-medium capitalize">{request.updateType.replace('_', ' ')}</p>
+                    <p className="font-medium capitalize">{request.update_type.replace('_', ' ')}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Created</p>
-                    <p className="font-medium">{new Date(request.createdAt).toLocaleDateString()}</p>
+                    <p className="font-medium">{new Date(request.created_at).toLocaleDateString()}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Updated</p>
-                    <p className="font-medium">{new Date(request.updatedAt).toLocaleDateString()}</p>
+                    <p className="font-medium">{new Date(request.updated_at).toLocaleDateString()}</p>
                   </div>
                 </div>
 
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2">Customer Instruction</p>
-                  <p className="text-sm bg-gray-50 p-3 rounded-lg">{request.customerInstruction}</p>
+                  <p className="text-sm bg-gray-50 p-3 rounded-lg">{request.customer_instruction}</p>
                 </div>
 
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2">Fields to Update</p>
                   <div className="bg-blue-50 p-3 rounded-lg">
-                    {Object.entries(request.fieldsToUpdate).map(([field, value]) => 
+                    {Object.entries(request.fields_to_update).map(([field, value]) => 
                       value && (
                         <div key={field} className="flex justify-between py-1">
                           <span className="text-sm text-gray-700 capitalize">{field.replace(/([A-Z])/g, ' $1')}:</span>
@@ -225,7 +238,7 @@ export function SupervisorWorkspace({ user }: SupervisorWorkspaceProps) {
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="text-sm text-gray-500">
-                    Last updated {new Date(request.updatedAt).toLocaleDateString()}
+                    Last updated {new Date(request.updated_at).toLocaleDateString()}
                   </div>
                   <div className="flex items-center space-x-3">
                     <button

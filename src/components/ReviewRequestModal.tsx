@@ -44,7 +44,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             </div>
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Review Request #{request.id}</h2>
-              <p className="text-gray-600">{request.customerName}</p>
+              <p className="text-gray-600">{request.customer_name}</p>
             </div>
           </div>
           <button
@@ -85,15 +85,15 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                   <div>
                     <span className="text-sm font-medium text-gray-700">Name:</span>
-                    <p className="text-gray-900">{request.customerName}</p>
+                    <p className="text-gray-900">{request.customer_name}</p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-700">Account Number:</span>
-                    <p className="text-gray-900 font-mono">{request.accountNumber}</p>
+                    <p className="text-gray-900 font-mono">{request.account_number}</p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-700">Update Type:</span>
-                    <p className="text-gray-900 capitalize">{request.updateType.replace('_', ' ')}</p>
+                    <p className="text-gray-900 capitalize">{request.update_type.replace('_', ' ')}</p>
                   </div>
                 </div>
               </div>
@@ -103,15 +103,15 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                 <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                   <div>
                     <span className="text-sm font-medium text-gray-700">Initiated by:</span>
-                    <p className="text-gray-900">{request.initiatorName}</p>
+                    <p className="text-gray-900">{request.initiator?.full_name}</p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-700">Created:</span>
-                    <p className="text-gray-900">{new Date(request.createdAt).toLocaleString()}</p>
+                    <p className="text-gray-900">{new Date(request.created_at).toLocaleString()}</p>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-700">Last Updated:</span>
-                    <p className="text-gray-900">{new Date(request.updatedAt).toLocaleString()}</p>
+                    <p className="text-gray-900">{new Date(request.updated_at).toLocaleString()}</p>
                   </div>
                 </div>
               </div>
@@ -121,7 +121,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Fields to Update</h3>
                 <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                  {Object.entries(request.fieldsToUpdate).map(([field, value]) => 
+                  {Object.entries(request.fields_to_update).map(([field, value]) => 
                     value && (
                       <div key={field} className="flex justify-between items-start">
                         <span className="text-sm font-medium text-gray-700 capitalize">
@@ -136,20 +136,20 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                 </div>
               </div>
 
-              {request.reviewNotes && (
+              {request.review_notes && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Previous Review Notes</h3>
                   <div className="bg-green-50 rounded-lg p-4">
-                    <p className="text-sm text-green-800">{request.reviewNotes}</p>
+                    <p className="text-sm text-green-800">{request.review_notes}</p>
                   </div>
                 </div>
               )}
 
-              {request.rejectionReason && (
+              {request.rejection_reason && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">Rejection Reason</h3>
                   <div className="bg-red-50 rounded-lg p-4">
-                    <p className="text-sm text-red-800">{request.rejectionReason}</p>
+                    <p className="text-sm text-red-800">{request.rejection_reason}</p>
                   </div>
                 </div>
               )}
@@ -162,7 +162,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-start space-x-2">
                 <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                <p className="text-yellow-800">{request.customerInstruction}</p>
+                <p className="text-yellow-800">{request.customer_instruction}</p>
               </div>
             </div>
           </div>

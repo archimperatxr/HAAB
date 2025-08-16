@@ -69,7 +69,7 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
           {/* User Menu */}
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
+              <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
               <p className="text-xs text-gray-500 capitalize">{user.role} • {user.department}</p>
             </div>
             <button

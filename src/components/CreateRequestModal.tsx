@@ -12,13 +12,13 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
   const { addRequest } = useWorkflow();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    customerName: '',
-    accountNumber: '',
-    updateType: 'personal_info' as UpdateRequest['updateType'],
-    fieldsToUpdate: {} as Record<string, any>,
-    customerInstruction: '',
+    customer_name: '',
+    account_number: '',
+    update_type: 'personal_info' as UpdateRequest['update_type'],
+    fields_to_update: {} as Record<string, any>,
+    customer_instruction: '',
     priority: 'medium' as UpdateRequest['priority'],
-    assignedSupervisorId: '2', // Default to Sarah Manager
+    assigned_supervisor_id: '22222222-2222-2222-2222-222222222222', // Default to Sarah Manager
     attachments: [] as string[]
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,24 +41,24 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
     const newErrors: Record<string, string> = {};
 
     if (stepNumber === 1) {
-      if (!formData.customerName.trim()) {
-        newErrors.customerName = 'Customer name is required';
+      if (!formData.customer_name.trim()) {
+        newErrors.customer_name = 'Customer name is required';
       }
-      if (!formData.accountNumber.trim()) {
-        newErrors.accountNumber = 'Account number is required';
-      } else if (!/^\d{10}$/.test(formData.accountNumber)) {
-        newErrors.accountNumber = 'Account number must be 10 digits';
+      if (!formData.account_number.trim()) {
+        newErrors.account_number = 'Account number is required';
+      } else if (!/^\d{10}$/.test(formData.account_number)) {
+        newErrors.account_number = 'Account number must be 10 digits';
       }
-      if (!formData.customerInstruction.trim()) {
-        newErrors.customerInstruction = 'Customer instruction is required';
+      if (!formData.customer_instruction.trim()) {
+        newErrors.customer_instruction = 'Customer instruction is required';
       }
     }
 
     if (stepNumber === 2) {
-      const requiredFields = fieldsByType[formData.updateType];
-      const hasAtLeastOneField = requiredFields.some(field => formData.fieldsToUpdate[field]?.trim());
+      const requiredFields = fieldsByType[formData.update_type];
+      const hasAtLeastOneField = requiredFields.some(field => formData.fields_to_update[field]?.trim());
       if (!hasAtLeastOneField) {
-        newErrors.fieldsToUpdate = 'At least one field must be updated';
+        newErrors.fields_to_update = 'At least one field must be updated';
       }
     }
 
@@ -80,15 +80,13 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
     e.preventDefault();
     if (validateStep(3)) {
       addRequest({
-        customerName: formData.customerName,
-        accountNumber: formData.accountNumber,
-        updateType: formData.updateType,
-        fieldsToUpdate: formData.fieldsToUpdate,
-        customerInstruction: formData.customerInstruction,
-        initiatorId: user.id,
-        initiatorName: user.fullName,
-        assignedSupervisorId: formData.assignedSupervisorId,
-        assignedSupervisorName: 'Sarah Manager',
+        customer_name: formData.customer_name,
+        account_number: formData.account_number,
+        update_type: formData.update_type,
+        fields_to_update: formData.fields_to_update,
+        customer_instruction: formData.customer_instruction,
+        initiator_id: user.id,
+        assigned_supervisor_id: formData.assigned_supervisor_id,
         status: 'pending',
         priority: formData.priority,
         attachments: formData.attachments
@@ -100,8 +98,8 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
   const handleFieldUpdate = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      fieldsToUpdate: {
-        ...prev.fieldsToUpdate,
+      fields_to_update: {
+        ...prev.fields_to_update,
         [field]: value
       }
     }));
@@ -159,15 +157,15 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   </label>
                   <input
                     type="text"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    value={formData.customer_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customer_name: e.target.value }))}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                      errors.customerName ? 'border-red-300' : 'border-gray-300'
+                      errors.customer_name ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Enter customer's full name"
                   />
-                  {errors.customerName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.customerName}</p>
+                  {errors.customer_name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.customer_name}</p>
                   )}
                 </div>
 
@@ -177,16 +175,16 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   </label>
                   <input
                     type="text"
-                    value={formData.accountNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    value={formData.account_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, account_number: e.target.value }))}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                      errors.accountNumber ? 'border-red-300' : 'border-gray-300'
+                      errors.account_number ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Enter 10-digit account number"
                     maxLength={10}
                   />
-                  {errors.accountNumber && (
-                    <p className="mt-1 text-sm text-red-600">{errors.accountNumber}</p>
+                  {errors.account_number && (
+                    <p className="mt-1 text-sm text-red-600">{errors.account_number}</p>
                   )}
                 </div>
 
@@ -201,8 +199,8 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                           type="radio"
                           name="updateType"
                           value={type.value}
-                          checked={formData.updateType === type.value}
-                          onChange={(e) => setFormData(prev => ({ ...prev, updateType: e.target.value as any }))}
+                          checked={formData.update_type === type.value}
+                          onChange={(e) => setFormData(prev => ({ ...prev, update_type: e.target.value as any }))}
                           className="mt-1"
                         />
                         <div>
@@ -219,16 +217,16 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                     Customer Instruction *
                   </label>
                   <textarea
-                    value={formData.customerInstruction}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerInstruction: e.target.value }))}
+                    value={formData.customer_instruction}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customer_instruction: e.target.value }))}
                     rows={4}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                      errors.customerInstruction ? 'border-red-300' : 'border-gray-300'
+                      errors.customer_instruction ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Describe the customer's instruction for this update..."
                   />
-                  {errors.customerInstruction && (
-                    <p className="mt-1 text-sm text-red-600">{errors.customerInstruction}</p>
+                  {errors.customer_instruction && (
+                    <p className="mt-1 text-sm text-red-600">{errors.customer_instruction}</p>
                   )}
                 </div>
 
@@ -254,17 +252,17 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Fields to Update - {updateTypes.find(t => t.value === formData.updateType)?.label}
+                    Fields to Update - {updateTypes.find(t => t.value === formData.update_type)?.label}
                   </h3>
                   <div className="space-y-4">
-                    {fieldsByType[formData.updateType].map(field => (
+                    {fieldsByType[formData.update_type].map(field => (
                       <div key={field}>
                         <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
                           {field.replace(/([A-Z])/g, ' $1').toLowerCase()}
                         </label>
                         <input
                           type="text"
-                          value={formData.fieldsToUpdate[field] || ''}
+                          value={formData.fields_to_update[field] || ''}
                           onChange={(e) => handleFieldUpdate(field, e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                           placeholder={`Enter new ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`}
@@ -272,10 +270,10 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                       </div>
                     ))}
                   </div>
-                  {errors.fieldsToUpdate && (
+                  {errors.fields_to_update && (
                     <div className="mt-2 flex items-center space-x-2 text-sm text-red-600">
                       <AlertCircle className="h-4 w-4" />
-                      <span>{errors.fieldsToUpdate}</span>
+                      <span>{errors.fields_to_update}</span>
                     </div>
                   )}
                 </div>
@@ -307,15 +305,15 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <span className="text-sm font-medium text-gray-700">Customer:</span>
-                      <p className="text-gray-900">{formData.customerName}</p>
+                      <p className="text-gray-900">{formData.customer_name}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-700">Account:</span>
-                      <p className="text-gray-900">{formData.accountNumber}</p>
+                      <p className="text-gray-900">{formData.account_number}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-700">Update Type:</span>
-                      <p className="text-gray-900 capitalize">{formData.updateType.replace('_', ' ')}</p>
+                      <p className="text-gray-900 capitalize">{formData.update_type.replace('_', ' ')}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-700">Priority:</span>
@@ -326,7 +324,7 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   <div>
                     <span className="text-sm font-medium text-gray-700">Fields to Update:</span>
                     <div className="mt-2 space-y-2">
-                      {Object.entries(formData.fieldsToUpdate).map(([field, value]) => 
+                      {Object.entries(formData.fields_to_update).map(([field, value]) => 
                         value && (
                           <div key={field} className="flex justify-between">
                             <span className="text-sm text-gray-600 capitalize">{field.replace(/([A-Z])/g, ' $1')}:</span>
@@ -339,7 +337,7 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   
                   <div>
                     <span className="text-sm font-medium text-gray-700">Customer Instruction:</span>
-                    <p className="text-gray-900 mt-1">{formData.customerInstruction}</p>
+                    <p className="text-gray-900 mt-1">{formData.customer_instruction}</p>
                   </div>
                 </div>
               </div>

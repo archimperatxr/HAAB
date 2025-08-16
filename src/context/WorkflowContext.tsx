@@ -1,142 +1,208 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase, UpdateRequest, createAuditLog } from '../lib/supabase';
+import { User } from '../App';
 
-export interface UpdateRequest {
-  id: string;
-  customerName: string;
-  accountNumber: string;
-  updateType: 'personal_info' | 'contact_info' | 'address' | 'employment';
-  fieldsToUpdate: Record<string, any>;
-  customerInstruction: string;
-  initiatorId: string;
-  initiatorName: string;
-  assignedSupervisorId?: string;
-  assignedSupervisorName?: string;
-  status: 'draft' | 'pending' | 'in_review' | 'approved' | 'rejected';
-  priority: 'low' | 'medium' | 'high';
-  createdAt: string;
-  updatedAt: string;
-  reviewNotes?: string;
-  rejectionReason?: string;
-  attachments: string[];
-}
+// Re-export the UpdateRequest type from supabase lib
+export type { UpdateRequest } from '../lib/supabase';
 
 interface WorkflowContextType {
   requests: UpdateRequest[];
+  loading: boolean;
+  error: string | null;
   addRequest: (request: Omit<UpdateRequest, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateRequest: (id: string, updates: Partial<UpdateRequest>) => void;
   deleteRequest: (id: string) => void;
   approveRequest: (id: string, notes?: string) => void;
   rejectRequest: (id: string, reason: string) => void;
+  refreshRequests: () => Promise<void>;
 }
 
 const WorkflowContext = createContext<WorkflowContextType | null>(null);
 
-export function WorkflowProvider({ children }: { children: React.ReactNode }) {
+export function WorkflowProvider({ 
+  children, 
+  currentUser 
+}: { 
+  children: React.ReactNode;
+  currentUser: User | null;
+}) {
   const [requests, setRequests] = useState<UpdateRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load data from localStorage
-    const storedRequests = localStorage.getItem('haab-requests');
-    if (storedRequests) {
-      setRequests(JSON.parse(storedRequests));
-    } else {
-      // Initialize with sample data
-      const sampleRequests: UpdateRequest[] = [
-        {
-          id: 'REQ-001',
-          customerName: 'Alice Johnson',
-          accountNumber: '1234567890',
-          updateType: 'contact_info',
-          fieldsToUpdate: {
-            email: 'alice.new@email.com',
-            phone: '+1-555-0123'
-          },
-          customerInstruction: 'Please update my email and phone number as per the attached form.',
-          initiatorId: '1',
-          initiatorName: 'John Doe',
-          assignedSupervisorId: '2',
-          assignedSupervisorName: 'Sarah Manager',
-          status: 'pending',
-          priority: 'medium',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          attachments: []
-        },
-        {
-          id: 'REQ-002',
-          customerName: 'Bob Smith',
-          accountNumber: '0987654321',
-          updateType: 'address',
-          fieldsToUpdate: {
-            street: '123 New Street',
-            city: 'New City',
-            zipCode: '12345'
-          },
-          customerInstruction: 'Customer has moved to new address. Please update all records.',
-          initiatorId: '1',
-          initiatorName: 'John Doe',
-          assignedSupervisorId: '2',
-          assignedSupervisorName: 'Sarah Manager',
-          status: 'in_review',
-          priority: 'high',
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-          updatedAt: new Date().toISOString(),
-          attachments: []
-        }
-      ];
-      setRequests(sampleRequests);
+  const refreshRequests = async () => {
+    if (!currentUser) {
+      setRequests([]);
+      setLoading(false);
+      return;
     }
-  }, []);
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      let query = supabase
+        .from('update_requests')
+        .select(`
+          *,
+          initiator:users!update_requests_initiator_id_fkey(id, username, full_name, role, department),
+          assigned_supervisor:users!update_requests_assigned_supervisor_id_fkey(id, username, full_name, role, department)
+        `);
+
+      // Apply role-based filtering
+      if (currentUser.role === 'initiator') {
+        query = query.eq('initiator_id', currentUser.id);
+      } else if (currentUser.role === 'supervisor') {
+        query = query.eq('assigned_supervisor_id', currentUser.id);
+      }
+      // Admins can see all requests (no additional filter)
+
+      const { data, error: fetchError } = await query.order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      setRequests(data || []);
+    } catch (err) {
+      console.error('Error fetching requests:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Save to localStorage whenever requests change
-    localStorage.setItem('haab-requests', JSON.stringify(requests));
-  }, [requests]);
+    refreshRequests();
+  }, [currentUser]);
 
-  const addRequest = (requestData: Omit<UpdateRequest, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newRequest: UpdateRequest = {
-      ...requestData,
-      id: `REQ-${String(requests.length + 1).padStart(3, '0')}`,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    setRequests(prev => [...prev, newRequest]);
+  const addRequest = async (requestData: Omit<UpdateRequest, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!currentUser) return;
+
+    try {
+      // Generate request ID
+      const requestId = `REQ-${String(Date.now()).slice(-6)}`;
+
+      const { data, error } = await supabase
+        .from('update_requests')
+        .insert({
+          id: requestId,
+          customer_name: requestData.customer_name,
+          account_number: requestData.account_number,
+          update_type: requestData.update_type,
+          fields_to_update: requestData.fields_to_update,
+          customer_instruction: requestData.customer_instruction,
+          initiator_id: currentUser.id,
+          assigned_supervisor_id: requestData.assigned_supervisor_id,
+          status: requestData.status,
+          priority: requestData.priority,
+          attachments: requestData.attachments
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        currentUser.id,
+        'Request Created',
+        'update_request',
+        requestId,
+        { customer_name: requestData.customer_name, update_type: requestData.update_type }
+      );
+
+      // Refresh requests to get updated data
+      await refreshRequests();
+    } catch (err) {
+      console.error('Error creating request:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create request');
+    }
   };
 
-  const updateRequest = (id: string, updates: Partial<UpdateRequest>) => {
-    setRequests(prev => prev.map(req => 
-      req.id === id 
-        ? { ...req, ...updates, updatedAt: new Date().toISOString() }
-        : req
-    ));
+  const updateRequest = async (id: string, updates: Partial<UpdateRequest>) => {
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('update_requests')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        currentUser.id,
+        'Request Updated',
+        'update_request',
+        id,
+        updates
+      );
+
+      // Refresh requests
+      await refreshRequests();
+    } catch (err) {
+      console.error('Error updating request:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update request');
+    }
   };
 
-  const deleteRequest = (id: string) => {
-    setRequests(prev => prev.filter(req => req.id !== id));
+  const deleteRequest = async (id: string) => {
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from('update_requests')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Create audit log
+      await createAuditLog(
+        currentUser.id,
+        'Request Deleted',
+        'update_request',
+        id
+      );
+
+      // Refresh requests
+      await refreshRequests();
+    } catch (err) {
+      console.error('Error deleting request:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete request');
+    }
   };
 
-  const approveRequest = (id: string, notes?: string) => {
-    updateRequest(id, {
+  const approveRequest = async (id: string, notes?: string) => {
+    await updateRequest(id, {
       status: 'approved',
-      reviewNotes: notes
+      review_notes: notes
     });
   };
 
-  const rejectRequest = (id: string, reason: string) => {
-    updateRequest(id, {
+  const rejectRequest = async (id: string, reason: string) => {
+    await updateRequest(id, {
       status: 'rejected',
-      rejectionReason: reason
+      rejection_reason: reason
     });
   };
 
   return (
     <WorkflowContext.Provider value={{
       requests,
+      loading,
+      error,
       addRequest,
       updateRequest,
       deleteRequest,
       approveRequest,
-      rejectRequest
+      rejectRequest,
+      refreshRequests
     }}>
       {children}
     </WorkflowContext.Provider>

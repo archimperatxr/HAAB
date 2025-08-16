@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import { Building2, Lock, User } from 'lucide-react';
 import { User as UserType } from '../App';
+import { signInWithPassword } from '../lib/supabase';
 
 interface LoginPageProps {
   onLogin: (user: UserType) => void;
 }
-
-// Mock users for demonstration
-const mockUsers: UserType[] = [
-  { id: '1', username: 'john.doe', role: 'initiator', department: 'Customer Service', fullName: 'John Doe' },
-  { id: '2', username: 'sarah.manager', role: 'supervisor', department: 'Operations', fullName: 'Sarah Manager' },
-  { id: '3', username: 'admin.user', role: 'admin', department: 'IT', fullName: 'Admin User' },
-];
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [username, setUsername] = useState('');
@@ -24,16 +18,19 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setLoading(true);
     setError('');
 
-    // Simulate API call
-    setTimeout(() => {
-      const user = mockUsers.find(u => u.username === username);
-      if (user && password === 'password123') {
+    try {
+      // For demo purposes, we accept any password
+      if (password === 'password123') {
+        const user = await signInWithPassword(username, password);
         onLogin(user);
       } else {
-        setError('Invalid credentials. Use any username from the demo list with password "password123"');
+        setError('Invalid password. Use "password123" for demo accounts.');
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -108,12 +105,18 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Demo Users:</h3>
             <div className="space-y-2 text-sm">
-              {mockUsers.map(user => (
-                <div key={user.id} className="flex justify-between text-gray-600">
-                  <span>{user.username}</span>
-                  <span className="capitalize">{user.role}</span>
-                </div>
-              ))}
+              <div className="flex justify-between text-gray-600">
+                <span>john.doe</span>
+                <span>Initiator</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>sarah.manager</span>
+                <span>Supervisor</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>admin.user</span>
+                <span>Admin</span>
+              </div>
               <p className="text-xs text-gray-500 mt-2">Password for all users: password123</p>
             </div>
           </div>

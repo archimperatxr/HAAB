@@ -9,16 +9,16 @@ interface InitiatorWorkspaceProps {
 }
 
 export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
-  const { requests } = useWorkflow();
+  const { requests, loading, error } = useWorkflow();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const myRequests = requests.filter(req => req.initiatorId === user.id);
+  const myRequests = requests.filter(req => req.initiator_id === user.id);
   
   const filteredRequests = myRequests.filter(req => {
-    const matchesSearch = req.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         req.accountNumber.includes(searchTerm) ||
+    const matchesSearch = req.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         req.account_number.includes(searchTerm) ||
                          req.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || req.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -103,6 +103,19 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
       </div>
 
       {/* Requests Grid */}
+      {loading && (
+        <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading requests...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+          <p className="text-red-800">Error: {error}</p>
+        </div>
+      )}
+
       {filteredRequests.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm p-12 text-center border border-gray-100">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -134,7 +147,7 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">Request #{request.id}</h3>
-                      <p className="text-sm text-gray-600">{request.customerName}</p>
+                      <p className="text-sm text-gray-600">{request.customer_name}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -150,28 +163,28 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
                 <div className="grid md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Account Number</p>
-                    <p className="font-medium">{request.accountNumber}</p>
+                    <p className="font-medium">{request.account_number}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Update Type</p>
-                    <p className="font-medium capitalize">{request.updateType.replace('_', ' ')}</p>
+                    <p className="font-medium capitalize">{request.update_type.replace('_', ' ')}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Assigned Supervisor</p>
-                    <p className="font-medium">{request.assignedSupervisorName || 'Not assigned'}</p>
+                    <p className="font-medium">{request.assigned_supervisor?.full_name || 'Not assigned'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Created</p>
-                    <p className="font-medium">{new Date(request.createdAt).toLocaleDateString()}</p>
+                    <p className="font-medium">{new Date(request.created_at).toLocaleDateString()}</p>
                   </div>
                 </div>
 
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 mb-2">Customer Instruction</p>
-                  <p className="text-sm bg-gray-50 p-3 rounded-lg">{request.customerInstruction}</p>
+                  <p className="text-sm bg-gray-50 p-3 rounded-lg">{request.customer_instruction}</p>
                 </div>
 
-                {(request.reviewNotes || request.rejectionReason) && (
+                {(request.review_notes || request.rejection_reason) && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600 mb-2">
                       {request.status === 'rejected' ? 'Rejection Reason' : 'Review Notes'}
@@ -179,7 +192,7 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
                     <p className={`text-sm p-3 rounded-lg ${
                       request.status === 'rejected' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
                     }`}>
-                      {request.rejectionReason || request.reviewNotes}
+                      {request.rejection_reason || request.review_notes}
                     </p>
                   </div>
                 )}
@@ -187,7 +200,7 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
                     {getStatusIcon(request.status)}
-                    <span>Updated {new Date(request.updatedAt).toLocaleDateString()}</span>
+                    <span>Updated {new Date(request.updated_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
