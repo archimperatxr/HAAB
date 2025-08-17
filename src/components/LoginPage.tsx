@@ -107,13 +107,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+            <AuthDebugger user={user} />
           </form>
 
         </div>
-      </div>
-      {/* This is the new part. It will display the JWT claims for debugging. */}
-      <div className="w-full max-w-md mt-4">
-        <AuthDebugger user={user} />
       </div>
     </div>
   );
