@@ -3,6 +3,7 @@ import { User } from '../App';
 import { useWorkflow } from '../context/WorkflowContext';
 import { Plus, Search, Filter, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { CreateRequestModal } from './CreateRequestModal';
+import { RequestDetailsModal } from './RequestDetailsModal';
 
 interface InitiatorWorkspaceProps {
   user: User;
@@ -11,6 +12,7 @@ interface InitiatorWorkspaceProps {
 export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
   const { requests, loading, error } = useWorkflow();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -24,6 +26,7 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
     return matchesSearch && matchesStatus;
   });
 
+  const selectedRequest = selectedRequestId ? requests.find(req => req.id === selectedRequestId) : null;
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved': return <CheckCircle className="h-5 w-5 text-green-600" />;
@@ -203,7 +206,10 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
                     <span>Updated {new Date(request.updated_at).toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <button 
+                      onClick={() => setSelectedRequestId(request.id)}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
                       View Details
                     </button>
                     {request.status === 'draft' && (
@@ -224,6 +230,14 @@ export function InitiatorWorkspace({ user }: InitiatorWorkspaceProps) {
         <CreateRequestModal
           user={user}
           onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Request Details Modal */}
+      {selectedRequest && (
+        <RequestDetailsModal
+          request={selectedRequest}
+          onClose={() => setSelectedRequestId(null)}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../App';
 import { useWorkflow } from '../context/WorkflowContext';
+import { RequestDetailsModal } from './RequestDetailsModal';
 import { 
   ClipboardList, 
   Clock, 
@@ -20,6 +21,7 @@ interface DashboardProps {
 
 export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin }: DashboardProps) {
   const { requests } = useWorkflow();
+  const [selectedRequestId, setSelectedRequestId] = React.useState<string | null>(null);
 
   const getStats = () => {
     const myRequests = requests.filter(req => 
@@ -63,40 +65,59 @@ export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin }: Da
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
 
+    const selectedRequest = selectedRequestId ? requests.find(req => req.id === selectedRequestId) : null;
     return (
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        {recentRequests.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No recent activity</p>
-        ) : (
-          <div className="space-y-4">
-            {recentRequests.map(request => (
-              <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-3">
-                  <FileText className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-gray-900">#{request.id}</p>
-                    <p className="text-sm text-gray-600">{request.customer_name}</p>
+      <>
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+          {recentRequests.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No recent activity</p>
+          ) : (
+            <div className="space-y-4">
+              {recentRequests.map(request => (
+                <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center space-x-3">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                    <div>
+                      <p className="font-medium text-gray-900">#{request.id}</p>
+                      <p className="text-sm text-gray-600">{request.customer_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                        request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        request.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
+                        {request.status.replace('_', ' ').toUpperCase()}
+                      </span>
+                      <button
+                        onClick={() => setSelectedRequestId(request.id)}
+                        className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                      >
+                        View
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(request.created_at).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                    request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                    request.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
-                    {request.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(request.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Request Details Modal */}
+        {selectedRequest && (
+          <RequestDetailsModal
+            request={selectedRequest}
+            onClose={() => setSelectedRequestId(null)}
+          />
         )}
-      </div>
+      </>
     );
   };
 
