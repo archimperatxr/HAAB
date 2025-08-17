@@ -101,25 +101,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </button>
           </form>
 
-          {/* Demo Users */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Demo Users:</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between text-gray-600">
-                <span>john.doe</span>
-                <span>Initiator</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>sarah.manager</span>
-                <span>Supervisor</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>admin.user</span>
-                <span>Admin</span>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Password for all users: password123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
