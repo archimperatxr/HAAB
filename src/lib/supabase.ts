@@ -63,6 +63,14 @@ export interface AuditLog {
  * @returns A promise that resolves with the User object on success.
  * @throws An error if the sign-in fails.
  */
+/**
+ * Signs a user in using Supabase's built-in authentication.
+ * This is a secure alternative to the previous demo function.
+ * @param username The user's username (treated as the email address).
+ * @param password The user's password.
+ * @returns A promise that resolves with the User object on success.
+ * @throws An error if the sign-in fails.
+ */
 export const signInWithPassword = async (username: string, password: string) => {
   // Use Supabase's native authentication method.
   // NOTE: Supabase Auth uses 'email' as the primary identifier.
@@ -76,6 +84,11 @@ export const signInWithPassword = async (username: string, password: string) => 
     // Supabase returns specific error messages that are more secure
     // than exposing internal details. We can re-throw this.
     throw new Error(error.message);
+  }
+
+  // Debugging: Log the access token to inspect its claims
+  if (data.session) {
+    console.log("Access Token:", data.session.access_token);
   }
 
   // The 'user' object from auth is slightly different from our custom User interface.
@@ -98,7 +111,6 @@ export const signInWithPassword = async (username: string, password: string) => 
   // Fallback in case the user object is not available
   throw new Error('Login failed: User object not found.');
 };
-
 /**
  * Signs the currently authenticated user out.
  * @returns A promise that resolves when the sign-out is complete.
