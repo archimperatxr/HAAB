@@ -140,3 +140,23 @@ export const createAuditLog = async (
     console.error('Failed to create audit log:', error);
   }
 };
+
+/**
+ * Fetches all audit logs from the database, ordered by creation time.
+ * This function should be protected by an RLS policy to ensure only
+ * authorized users can access it.
+ * @returns A promise that resolves with an array of AuditLog objects.
+ * @throws An error if the fetch fails.
+ */
+export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error('Failed to fetch audit logs: ' + error.message);
+  }
+
+  return data;
+};
