@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Building2, Lock, User } from 'lucide-react';
 import { User as UserType } from '../App';
 import { signInWithPassword } from '../lib/supabase';
+import { AuthDebugger } from './AuthDebugger';
 
 interface LoginPageProps {
   onLogin: (user: UserType) => void;
@@ -12,6 +13,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Add a state to hold the user object for the AuthDebugger
+  const [user, setUser] = useState<UserType | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,15 +22,20 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setError('');
 
     try {
-      // For demo purposes, we accept any password
-      if (password !== 'password123') {
-        const user = await signInWithPassword(username, password);
-        onLogin(user);
-      } else {
-        setError('Invalid password. Use "password123" for demo accounts.');
-      }
+      // The demo password check is removed. The signInWithPassword function
+      // will now handle the password validation and return the user.
+      const loggedInUser = await signInWithPassword(username, password);
+
+      // Call the onLogin prop to handle the main application state
+      onLogin(loggedInUser);
+      
+      // Set the user in local state to trigger the AuthDebugger component
+      setUser(loggedInUser);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
+      // If login fails, clear the user state
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -102,6 +110,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </form>
 
         </div>
+      </div>
+      {/* This is the new part. It will display the JWT claims for debugging. */}
+      <div className="w-full max-w-md mt-4">
+        <AuthDebugger user={user} />
       </div>
     </div>
   );
