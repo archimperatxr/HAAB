@@ -48,16 +48,6 @@ export function AuthDebugger({ user }: AuthDebuggerProps) {
     };
   }, []);
 
-  return (
-    <div className="p-4 bg-gray-100 rounded-lg shadow-inner mt-4">
-      <h3 className="font-semibold text-gray-800">Authentication Debugger</h3>
-      {user ? (
-        <pre className="mt-2 p-2 bg-white rounded text-xs overflow-auto">
-          {JSON.stringify(claims, null, 2)}
-        </pre>
-      ) : (
-        <p className="text-sm text-gray-500 mt-2">No active session. Please log in.</p>
-      )}
-    </div>
+  return 
   );
 }
