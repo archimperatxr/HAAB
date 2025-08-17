@@ -67,6 +67,32 @@ export function AdminConsole({ user }: AdminConsoleProps) {
     }
   ]);
 
+  const [auditLogs, setAuditLogs] = useState<AuditLogType[]>([]);
+  const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
+  const [auditLogError, setAuditLogError] = useState<string | null>(null);
+
+  // useEffect hook to fetch audit logs when the 'audit' tab is selected
+  useEffect(() => {
+    const getAuditLogs = async () => {
+      setLoadingAuditLogs(true);
+      setAuditLogError(null);
+
+      try {
+        const data = await fetchAuditLogs();
+        setAuditLogs(data);
+      } catch (error) {
+        setAuditLogError('Failed to fetch audit logs. Please check RLS policy.');
+        console.error('Error fetching audit logs:', error);
+      } finally {
+        setLoadingAuditLogs(false);
+      }
+    };
+
+    if (activeTab === 'audit') {
+      getAuditLogs();
+    }
+  }, [activeTab]);
+
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800';
@@ -215,29 +241,34 @@ export function AdminConsole({ user }: AdminConsoleProps) {
           <h3 className="text-lg font-semibold text-gray-900">Recent System Activity</h3>
         </div>
         <div className="p-6">
-          <div className="space-y-4">
-            {[
-              { action: 'User Login', user: 'Sarah Manager', time: '2 minutes ago', details: 'Successful login from 192.168.1.100' },
-              { action: 'Request Approved', user: 'Sarah Manager', time: '15 minutes ago', details: 'Approved request REQ-001 for Alice Johnson' },
-              { action: 'Request Created', user: 'John Doe', time: '1 hour ago', details: 'Created new update request REQ-003' },
-              { action: 'User Created', user: 'Admin User', time: '2 hours ago', details: 'Created new user account for Jane Smith' },
-              { action: 'Request Rejected', user: 'Sarah Manager', time: '3 hours ago', details: 'Rejected request REQ-002 - insufficient documentation' }
-            ].map((log, index) => (
-              <div key={index} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                <div className="bg-blue-100 rounded-full p-2">
-                  <Activity className="h-4 w-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-gray-900">{log.action}</h4>
-                    <span className="text-sm text-gray-500">{log.time}</span>
+          {loadingAuditLogs && (
+            <div className="text-center text-gray-500">Loading audit logs...</div>
+          )}
+          {auditLogError && (
+            <div className="text-center text-red-500">{auditLogError}</div>
+          )}
+          {!loadingAuditLogs && !auditLogError && auditLogs.length === 0 && (
+            <div className="text-center text-gray-500">No audit logs found.</div>
+          )}
+          {!loadingAuditLogs && !auditLogError && auditLogs.length > 0 && (
+            <div className="space-y-4">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="bg-blue-100 rounded-full p-2">
+                    <Activity className="h-4 w-4 text-blue-600" />
                   </div>
-                  <p className="text-sm text-gray-600">{log.user}</p>
-                  <p className="text-sm text-gray-500 mt-1">{log.details}</p>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-gray-900">{log.action}</h4>
+                      <span className="text-sm text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{log.user_id}</p> {/* Use log.user_id for now */}
+                    <p className="text-sm text-gray-500 mt-1">{log.details.message || JSON.stringify(log.details)}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
