@@ -14,9 +14,11 @@ import {
 
 interface DashboardProps {
   user: User;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToAdmin?: () => void;
 }
 
-export function Dashboard({ user }: DashboardProps) {
+export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin }: DashboardProps) {
   const { requests } = useWorkflow();
 
   const getStats = () => {
@@ -98,6 +100,25 @@ export function Dashboard({ user }: DashboardProps) {
     );
   };
 
+  const handleCreateNewRequest = () => {
+    if (onNavigateToWorkspace) {
+      onNavigateToWorkspace();
+    }
+  };
+
+  const handleReviewRequests = () => {
+    if (onNavigateToWorkspace) {
+      onNavigateToWorkspace();
+    }
+  };
+
+  const handleViewReports = () => {
+    if (user.role === 'admin' && onNavigateToAdmin) {
+      onNavigateToAdmin();
+    } else if (onNavigateToWorkspace) {
+      onNavigateToWorkspace();
+    }
+  };
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -147,7 +168,10 @@ export function Dashboard({ user }: DashboardProps) {
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div className="space-y-3">
             {user.role === 'initiator' && (
-              <button className="w-full text-left p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200">
+              <button 
+                onClick={handleCreateNewRequest}
+                className="w-full text-left p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+              >
                 <div className="flex items-center space-x-3">
                   <ClipboardList className="h-5 w-5 text-blue-600" />
                   <div>
@@ -159,7 +183,10 @@ export function Dashboard({ user }: DashboardProps) {
             )}
             
             {user.role === 'supervisor' && (
-              <button className="w-full text-left p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200">
+              <button 
+                onClick={handleReviewRequests}
+                className="w-full text-left p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+              >
                 <div className="flex items-center space-x-3">
                   <Users className="h-5 w-5 text-green-600" />
                   <div>
@@ -170,12 +197,22 @@ export function Dashboard({ user }: DashboardProps) {
               </button>
             )}
             
-            <button className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+            <button 
+              onClick={handleViewReports}
+              className="w-full text-left p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+            >
               <div className="flex items-center space-x-3">
                 <TrendingUp className="h-5 w-5 text-gray-600" />
                 <div>
-                  <h4 className="font-medium text-gray-900">View Reports</h4>
-                  <p className="text-sm text-gray-700">Access workflow performance reports</p>
+                  <h4 className="font-medium text-gray-900">
+                    {user.role === 'admin' ? 'Admin Console' : 'View Reports'}
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    {user.role === 'admin' 
+                      ? 'Manage users and system settings' 
+                      : 'Access workflow performance reports'
+                    }
+                  </p>
                 </div>
               </div>
             </button>

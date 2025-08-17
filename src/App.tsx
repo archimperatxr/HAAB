@@ -69,7 +69,13 @@ function App() {
         />
         
         <main className="pt-16">
-          {currentView === 'dashboard' && <Dashboard user={currentUser} />}
+          {currentView === 'dashboard' && (
+            <Dashboard 
+              user={currentUser} 
+              onNavigateToWorkspace={() => setCurrentView('workspace')}
+              onNavigateToAdmin={() => setCurrentView('admin')}
+            />
+          )}
           
           {currentView === 'workspace' && currentUser.role === 'initiator' && 
             <InitiatorWorkspace user={currentUser} />
