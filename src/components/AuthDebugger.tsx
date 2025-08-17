@@ -48,6 +48,5 @@ export function AuthDebugger({ user }: AuthDebuggerProps) {
     };
   }, []);
 
-  return 
-  );
+  return ;
 }
