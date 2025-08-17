@@ -1,11 +1,11 @@
 import React from 'react';
-import { Building2, Home, Briefcase, Settings, LogOut } from 'lucide-react';
+import { Building2, Home, Briefcase, Settings, LogOut, BarChart2 } from 'lucide-react';
 import { User } from '../App';
 
 interface NavigationProps {
   user: User;
-  currentView: 'dashboard' | 'workspace' | 'admin';
-  onViewChange: (view: 'dashboard' | 'workspace' | 'admin') => void;
+  currentView: 'dashboard' | 'workspace' | 'admin' | 'reports';
+  onViewChange: (view: 'dashboard' | 'workspace' | 'admin' | 'reports') => void;
   onLogout: () => void;
 }
 
@@ -64,6 +64,18 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
                 <span>Admin</span>
               </button>
             )}
+
+            <button
+              onClick={() => onViewChange('reports')}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                currentView === 'reports' 
+                  ? 'bg-blue-100 text-blue-700' 
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <BarChart2 className="h-5 w-5" />
+              <span>Reports</span>
+            </button>
           </div>
 
           {/* User Menu */}
@@ -77,6 +89,7 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
               className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors"
             >
               <LogOut className="h-5 w-5" />
+              <span>Sign Out</span>
             </button>
           </div>
         </div>
