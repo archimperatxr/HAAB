@@ -5,6 +5,7 @@ import { InitiatorWorkspace } from './components/InitiatorWorkspace';
 import { SupervisorWorkspace } from './components/SupervisorWorkspace';
 import { AdminConsole } from './components/AdminConsole';
 import { Navigation } from './components/Navigation';
+import { ReportingModule } from './components/ReportingModule'; // Import the new component
 import { WorkflowProvider } from './context/WorkflowContext';
 import { User as SupabaseUser } from './lib/supabase';
 
@@ -15,7 +16,7 @@ export type User = SupabaseUser;
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace' | 'admin'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace' | 'admin' | 'reports'>('dashboard');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,7 +41,6 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('haab-user');
-    setCurrentView('dashboard');
   };
 
   if (loading) {
@@ -74,6 +74,7 @@ function App() {
               user={currentUser} 
               onNavigateToWorkspace={() => setCurrentView('workspace')}
               onNavigateToAdmin={() => setCurrentView('admin')}
+              onNavigateToReports={() => setCurrentView('reports')}
             />
           )}
           
@@ -88,6 +89,12 @@ function App() {
           {currentView === 'admin' && currentUser.role === 'admin' && 
             <AdminConsole user={currentUser} />
           }
+          
+          {currentView === 'reports' && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <ReportingModule user={currentUser} />
+            </div>
+          )}
         </main>
       </div>
     </WorkflowProvider>
