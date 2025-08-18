@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -146,7 +146,7 @@ export function ReportingModule({ user }: ReportingModuleProps) {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Requests Over Time</h3>
         <ResponsiveContainer width="100%" height={300}>
-          <AreaChart
+          <BarChart
             data={chartData}
             margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
           >
@@ -166,14 +166,12 @@ export function ReportingModule({ user }: ReportingModuleProps) {
                 color: '#1f2937',
               }}
             />
-            <Area
+            <Bar
               type="monotone"
               dataKey="requests"
-              stroke="#2563eb"
               fill="#bfdbfe"
-              strokeWidth={2}
             />
-          </AreaChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
