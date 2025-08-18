@@ -17,9 +17,11 @@ interface DashboardProps {
   user: User;
   onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
+  onNavigateToReports?: () => void;
 }
 
 export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin }: DashboardProps) {
+export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToReports }: DashboardProps) {
   const { requests } = useWorkflow();
   const [selectedRequestId, setSelectedRequestId] = React.useState<string | null>(null);
 
