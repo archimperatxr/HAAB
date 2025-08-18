@@ -170,6 +170,7 @@ export function ReportingModule({ user }: ReportingModuleProps) {
               type="monotone"
               dataKey="requests"
               fill="#bfdbfe"
+             maxBarSize={10}
             />
           </BarChart>
         </ResponsiveContainer>
