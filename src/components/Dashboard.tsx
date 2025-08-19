@@ -10,7 +10,8 @@ import {
   Users, 
   TrendingUp,
   AlertCircle,
-  FileText
+  FileText,
+  Settings
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -226,17 +227,29 @@ export function Dashboard({ user, onNavigateToWorkspace, onNavigateToAdmin, onNa
                 <TrendingUp className="h-5 w-5 text-gray-600" />
                 <div>
                   <h4 className="font-medium text-gray-900">
-                    {user.role === 'admin' ? 'Admin Console' : 'View Reports'}
+                    View Reports
                   </h4>
                   <p className="text-sm text-gray-700">
-                    {user.role === 'admin' 
-                      ? 'Manage users and system settings' 
-                      : 'Access workflow performance reports'
-                    }
+                    Access workflow performance reports
                   </p>
                 </div>
               </div>
             </button>
+            
+            {user.role === 'admin' && (
+              <button 
+                onClick={() => onNavigateToAdmin && onNavigateToAdmin()}
+                className="w-full text-left p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors border border-purple-200"
+              >
+                <div className="flex items-center space-x-3">
+                  <Settings className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <h4 className="font-medium text-purple-900">Admin Console</h4>
+                    <p className="text-sm text-purple-700">Manage users and system settings</p>
+                  </div>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </div>
