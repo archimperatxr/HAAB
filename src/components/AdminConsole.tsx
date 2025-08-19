@@ -1,75 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
 import { Users, Settings, Shield, Activity, Plus, Edit, Trash2 } from 'lucide-react';
-import { supabase, fetchAuditLogs } from '../lib/supabase';
+import { supabase, fetchAuditLogs, User as DatabaseUser } from '../lib/supabase';
 
 interface AdminConsoleProps {
   user: User;
 }
 
-interface UserAccount {
+// Define AuditLogType interface
+interface AuditLogType {
   id: string;
-  username: string;
-  fullName: string;
-  email: string;
-  role: 'initiator' | 'supervisor' | 'admin';
-  department: string;
-  status: 'active' | 'inactive';
-  lastLogin?: string;
-  createdAt: string;
+  user_id: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string;
+  details: Record<string, any>;
+  created_at: string;
+  user?: DatabaseUser;
 }
 
 export function AdminConsole({ user }: AdminConsoleProps) {
   const [activeTab, setActiveTab] = useState<'users' | 'permissions' | 'audit' | 'settings'>('users');
-  const [users, setUsers] = useState<UserAccount[]>([
-    {
-      id: '11111111-1111-1111-1111-111111111111',
-      username: 'john.doe',
-      fullName: 'John Doe',
-      email: 'john.doe@haab.com',
-      role: 'initiator',
-      department: 'Customer Service',
-      status: 'active',
-      lastLogin: new Date().toISOString(),
-      createdAt: '2024-01-15T00:00:00Z'
-    },
-    {
-      id: '22222222-2222-2222-2222-222222222222',
-      username: 'sarah.manager',
-      fullName: 'Sarah Manager',
-      email: 'sarah.manager@haab.com',
-      role: 'supervisor',
-      department: 'Operations',
-      status: 'active',
-      lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      createdAt: '2024-01-10T00:00:00Z'
-    },
-    {
-      id: '33333333-3333-3333-3333-333333333333',
-      username: 'admin.user',
-      fullName: 'Admin User',
-      email: 'admin@haab.com',
-      role: 'admin',
-      department: 'IT',
-      status: 'active',
-      lastLogin: new Date().toISOString(),
-      createdAt: '2024-01-05T00:00:00Z'
-    },
-    {
-      id: '44444444-4444-4444-4444-444444444444',
-      username: 'jane.smith',
-      fullName: 'Jane Smith',
-      email: 'jane.smith@haab.com',
-      role: 'initiator',
-      department: 'Customer Service',
-      status: 'inactive',
-      createdAt: '2024-02-01T00:00:00Z'
-    }
-  ]);
+  const [users, setUsers] = useState<DatabaseUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [userError, setUserError] = useState<string | null>(null);
 
   const [auditLogs, setAuditLogs] = useState<AuditLogType[]>([]);
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
   const [auditLogError, setAuditLogError] = useState<string | null>(null);
+
+  // Fetch users when component mounts or when users tab is selected
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      setUserError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setUsers(data || []);
+      } catch (error) {
+        setUserError('Failed to fetch users. Please check your permissions.');
+        console.error('Error fetching users:', error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    if (activeTab === 'users') {
+      fetchUsers();
+    }
+  }, [activeTab]);
 
   // useEffect hook to fetch audit logs when the 'audit' tab is selected
   useEffect(() => {
@@ -137,7 +125,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
                 <tr key={userAccount.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{userAccount.fullName}</div>
+                      <div className="text-sm font-medium text-gray-900">{userAccount.full_name}</div>
                       <div className="text-sm text-gray-500">{userAccount.email}</div>
                       <div className="text-xs text-gray-400">@{userAccount.username}</div>
                     </div>
@@ -172,6 +160,22 @@ export function AdminConsole({ user }: AdminConsoleProps) {
               ))}
             </tbody>
           </table>
+          {loadingUsers && (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading users...</p>
+            </div>
+          )}
+          {userError && (
+            <div className="p-4 bg-red-50 border-t border-red-200">
+              <p className="text-red-800 text-center">{userError}</p>
+            </div>
+          )}
+          {!loadingUsers && !userError && users.length === 0 && (
+            <div className="p-8 text-center">
+              <p className="text-gray-500">No users found.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
