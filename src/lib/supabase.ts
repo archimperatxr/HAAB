@@ -172,3 +172,43 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
 
   return data;
 };
+
+/**
+ * Fetches users based on the current user's role and permissions.
+ * @param currentUser The current authenticated user
+ * @returns A promise that resolves with an array of User objects
+ */
+export const fetchUsersForRole = async (currentUser: User): Promise<User[]> => {
+  let query = supabase.from('users').select('*');
+
+  if (currentUser.role === 'admin') {
+    // Admins can see all users
+    query = query.order('created_at', { ascending: false });
+  } else if (currentUser.role === 'initiator') {
+    // Initiators can see themselves and supervisors
+    query = query.or(`id.eq.${currentUser.id},role.eq.supervisor`);
+  } else if (currentUser.role === 'supervisor') {
+    // Supervisors can see themselves and users who have sent requests to them
+    const { data: requestUsers, error: requestError } = await supabase
+      .from('update_requests')
+      .select('initiator_id')
+      .eq('assigned_supervisor_id', currentUser.id);
+
+    if (requestError) {
+      throw new Error('Failed to fetch request users: ' + requestError.message);
+    }
+
+    const initiatorIds = requestUsers.map(req => req.initiator_id);
+    const userIds = [currentUser.id, ...initiatorIds];
+    
+    query = query.in('id', userIds);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error('Failed to fetch users: ' + error.message);
+  }
+
+  return data || [];
+};

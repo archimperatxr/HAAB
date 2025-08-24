@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
 import { Users, Settings, Shield, Activity, Plus, Edit, Trash2 } from 'lucide-react';
-import { supabase, fetchAuditLogs, User as DatabaseUser } from '../lib/supabase';
+import { supabase, fetchAuditLogs, fetchUsersForRole, User as DatabaseUser } from '../lib/supabase';
 
 interface AdminConsoleProps {
   user: User;
@@ -36,16 +36,8 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       setUserError(null);
 
       try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          throw error;
-        }
-
-        setUsers(data || []);
+        const data = await fetchUsersForRole(user);
+        setUsers(data);
       } catch (error) {
         setUserError('Failed to fetch users. Please check your permissions.');
         console.error('Error fetching users:', error);
@@ -57,7 +49,7 @@ export function AdminConsole({ user }: AdminConsoleProps) {
     if (activeTab === 'users') {
       fetchUsers();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   // useEffect hook to fetch audit logs when the 'audit' tab is selected
   useEffect(() => {

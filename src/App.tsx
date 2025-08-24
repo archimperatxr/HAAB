@@ -7,6 +7,7 @@ import { AdminConsole } from './components/AdminConsole';
 import { Navigation } from './components/Navigation';
 import { ReportingModule } from './components/ReportingModule'; // Import the new component
 import { WorkflowProvider } from './context/WorkflowContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { User as SupabaseUser } from './lib/supabase';
 
 export type UserRole = 'initiator' | 'supervisor' | 'admin';
@@ -59,45 +60,47 @@ function App() {
   }
 
   return (
-    <WorkflowProvider currentUser={currentUser}>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation 
-          user={currentUser} 
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          onLogout={handleLogout}
-        />
-        
-        <main className="pt-16">
-          {currentView === 'dashboard' && (
-            <Dashboard 
-              user={currentUser} 
-              onNavigateToWorkspace={() => setCurrentView('workspace')}
-              onNavigateToAdmin={() => setCurrentView('admin')}
-              onNavigateToReports={() => setCurrentView('reports')}
-            />
-          )}
+    <ThemeProvider>
+      <WorkflowProvider currentUser={currentUser}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+          <Navigation 
+            user={currentUser} 
+            currentView={currentView}
+            onViewChange={setCurrentView}
+            onLogout={handleLogout}
+          />
           
-          {currentView === 'workspace' && currentUser.role === 'initiator' && 
-            <InitiatorWorkspace user={currentUser} />
-          }
-          
-          {currentView === 'workspace' && currentUser.role === 'supervisor' && 
-            <SupervisorWorkspace user={currentUser} />
-          }
-          
-          {currentView === 'admin' && currentUser.role === 'admin' && 
-            <AdminConsole user={currentUser} />
-          }
-          
-          {currentView === 'reports' && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              <ReportingModule user={currentUser} />
-            </div>
-          )}
-        </main>
-      </div>
-    </WorkflowProvider>
+          <main className="pt-16">
+            {currentView === 'dashboard' && (
+              <Dashboard 
+                user={currentUser} 
+                onNavigateToWorkspace={() => setCurrentView('workspace')}
+                onNavigateToAdmin={() => setCurrentView('admin')}
+                onNavigateToReports={() => setCurrentView('reports')}
+              />
+            )}
+            
+            {currentView === 'workspace' && currentUser.role === 'initiator' && 
+              <InitiatorWorkspace user={currentUser} />
+            }
+            
+            {currentView === 'workspace' && currentUser.role === 'supervisor' && 
+              <SupervisorWorkspace user={currentUser} />
+            }
+            
+            {currentView === 'admin' && currentUser.role === 'admin' && 
+              <AdminConsole user={currentUser} />
+            }
+            
+            {currentView === 'reports' && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <ReportingModule user={currentUser} />
+              </div>
+            )}
+          </main>
+        </div>
+      </WorkflowProvider>
+    </ThemeProvider>
   );
 }
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import { User } from '../App';
 import { useWorkflow, UpdateRequest } from '../context/WorkflowContext';
+import { fetchUsersForRole, User as DatabaseUser } from '../lib/supabase';
 
 interface CreateRequestModalProps {
   user: User;
@@ -11,6 +12,8 @@ interface CreateRequestModalProps {
 export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
   const { addRequest } = useWorkflow();
   const [step, setStep] = useState(1);
+  const [supervisors, setSupervisors] = useState<DatabaseUser[]>([]);
+  const [loadingSupervisors, setLoadingSupervisors] = useState(false);
   const [formData, setFormData] = useState({
     customer_name: '',
     account_number: '',
@@ -18,10 +21,33 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
     fields_to_update: {} as Record<string, any>,
     customer_instruction: '',
     priority: 'medium' as UpdateRequest['priority'],
-    assigned_supervisor_id: '22222222-2222-2222-2222-222222222222', // Default to Sarah Manager
+    assigned_supervisor_id: '',
     attachments: [] as string[]
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fetch supervisors when component mounts
+  React.useEffect(() => {
+    const fetchSupervisors = async () => {
+      setLoadingSupervisors(true);
+      try {
+        const users = await fetchUsersForRole(user);
+        const supervisorUsers = users.filter(u => u.role === 'supervisor');
+        setSupervisors(supervisorUsers);
+        
+        // Set default supervisor if available
+        if (supervisorUsers.length > 0 && !formData.assigned_supervisor_id) {
+          setFormData(prev => ({ ...prev, assigned_supervisor_id: supervisorUsers[0].id }));
+        }
+      } catch (error) {
+        console.error('Error fetching supervisors:', error);
+      } finally {
+        setLoadingSupervisors(false);
+      }
+    };
+
+    fetchSupervisors();
+  }, [user]);
 
   const updateTypes = [
     { value: 'personal_info', label: 'Personal Information', description: 'Name, date of birth, ID numbers' },
@@ -86,7 +112,7 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
         fields_to_update: formData.fields_to_update,
         customer_instruction: formData.customer_instruction,
         initiator_id: user.id,
-        assigned_supervisor_id: 'bcbcc40f-0cc4-4fce-9ca9-9be9ef612b30',
+        assigned_supervisor_id: formData.assigned_supervisor_id,
         status: 'pending',
         priority: formData.priority,
         attachments: formData.attachments
@@ -243,6 +269,34 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                     <option value="medium">Medium Priority</option>
                     <option value="high">High Priority</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Assign to Supervisor *
+                  </label>
+                  {loadingSupervisors ? (
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500">
+                      Loading supervisors...
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.assigned_supervisor_id}
+                      onChange={(e) => setFormData(prev => ({ ...prev, assigned_supervisor_id: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      required
+                    >
+                      <option value="">Select a supervisor</option>
+                      {supervisors.map(supervisor => (
+                        <option key={supervisor.id} value={supervisor.id}>
+                          {supervisor.full_name} - {supervisor.department}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {supervisors.length === 0 && !loadingSupervisors && (
+                    <p className="mt-1 text-sm text-red-600">No supervisors available</p>
+                  )}
                 </div>
               </div>
             )}
