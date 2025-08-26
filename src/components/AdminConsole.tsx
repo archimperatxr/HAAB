@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
-import { Users, Settings, Shield, Activity, Plus, Edit, Trash2 } from 'lucide-react';
+import { Users, Settings, Shield, Activity, Plus, Edit, Trash2, User as UserIcon, Calendar, FileText, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { supabase, fetchAuditLogs, fetchUsersForRole, User as DatabaseUser } from '../lib/supabase';
 
 interface AdminConsoleProps {
@@ -72,6 +72,77 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       getAuditLogs();
     }
   }, [activeTab]);
+
+  const getActionIcon = (action: string) => {
+    switch (action.toLowerCase()) {
+      case 'request created':
+      case 'created':
+        return <Plus className="h-4 w-4 text-green-600" />;
+      case 'request updated':
+      case 'updated':
+        return <Edit className="h-4 w-4 text-blue-600" />;
+      case 'request deleted':
+      case 'deleted':
+        return <Trash2 className="h-4 w-4 text-red-600" />;
+      case 'request approved':
+      case 'approved':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'request rejected':
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'login':
+      case 'signed in':
+        return <UserIcon className="h-4 w-4 text-blue-600" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getActionColor = (action: string) => {
+    switch (action.toLowerCase()) {
+      case 'request created':
+      case 'created':
+        return 'bg-green-50 border-green-200';
+      case 'request updated':
+      case 'updated':
+        return 'bg-blue-50 border-blue-200';
+      case 'request deleted':
+      case 'deleted':
+        return 'bg-red-50 border-red-200';
+      case 'request approved':
+      case 'approved':
+        return 'bg-green-50 border-green-200';
+      case 'request rejected':
+      case 'rejected':
+        return 'bg-red-50 border-red-200';
+      case 'login':
+      case 'signed in':
+        return 'bg-blue-50 border-blue-200';
+      default:
+        return 'bg-gray-50 border-gray-200';
+    }
+  };
+
+  const formatAuditDetails = (details: Record<string, any>) => {
+    if (!details || Object.keys(details).length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="mt-2 space-y-1">
+        {Object.entries(details).map(([key, value]) => (
+          <div key={key} className="flex items-center space-x-2 text-xs">
+            <span className="font-medium text-gray-600 capitalize">
+              {key.replace(/_/g, ' ')}:
+            </span>
+            <span className="text-gray-800 bg-gray-100 px-2 py-0.5 rounded">
+              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -234,32 +305,65 @@ export function AdminConsole({ user }: AdminConsoleProps) {
       
       <div className="bg-white rounded-xl shadow-sm border border-gray-100">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Recent System Activity</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Recent System Activity</h3>
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <Activity className="h-4 w-4" />
+              <span>Live Activity Feed</span>
+            </div>
+          </div>
         </div>
         <div className="p-6">
           {loadingAuditLogs && (
-            <div className="text-center text-gray-500">Loading audit logs...</div>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-500">Loading audit logs...</p>
+            </div>
           )}
           {auditLogError && (
-            <div className="text-center text-red-500">{auditLogError}</div>
+            <div className="text-center py-8">
+              <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <p className="text-red-600 font-medium">{auditLogError}</p>
+            </div>
           )}
           {!loadingAuditLogs && !auditLogError && auditLogs.length === 0 && (
-            <div className="text-center text-gray-500">No audit logs found.</div>
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Activity Yet</h3>
+              <p className="text-gray-500">System activity will appear here as users interact with the application.</p>
+            </div>
           )}
           {!loadingAuditLogs && !auditLogError && auditLogs.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {auditLogs.map((log) => (
-                <div key={log.id} className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="bg-blue-100 rounded-full p-2">
-                    <Activity className="h-4 w-4 text-blue-600" />
+                <div key={log.id} className={`flex items-start space-x-4 p-4 rounded-lg border transition-all hover:shadow-sm ${getActionColor(log.action)}`}>
+                  <div className="bg-white rounded-full p-2 shadow-sm border">
+                    {getActionIcon(log.action)}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900">{log.action}</h4>
-                      <span className="text-sm text-gray-500">{new Date(log.created_at).toLocaleString()}</span>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-semibold text-gray-900">{log.action}</h4>
+                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-white rounded-full border">
+                          {log.resource_type}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <Calendar className="h-3 w-3" />
+                        <span>{new Date(log.created_at).toLocaleString()}</span>
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">{log.user_id}</p> {/* Use log.user_id for now */}
-                    <p className="text-sm text-gray-500 mt-1">{log.details.message || JSON.stringify(log.details)}</p>
+                    <div className="flex items-center space-x-2 mt-1">
+                      <UserIcon className="h-3 w-3 text-gray-400" />
+                      <p className="text-sm text-gray-600">User ID: {log.user_id}</p>
+                      {log.resource_id && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <p className="text-sm text-gray-600">Resource: {log.resource_id}</p>
+                        </>
+                      )}
+                    </div>
+                    {formatAuditDetails(log.details)}
                   </div>
                 </div>
               ))}
