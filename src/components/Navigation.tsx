@@ -53,7 +53,6 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
               <Briefcase className="h-5 w-5" />
               <span>Workspace</span>
             </button>
-          )}
 
           {user.role !== 'admin' && (
             <button
