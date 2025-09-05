@@ -42,6 +42,7 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
               <span>Dashboard</span>
             </button>
 
+            {user.role !== 'admin' && (
             <button
               onClick={() => onViewChange('workspace')}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
@@ -53,20 +54,8 @@ export function Navigation({ user, currentView, onViewChange, onLogout }: Naviga
               <Briefcase className="h-5 w-5" />
               <span>Workspace</span>
             </button>
-
-          {user.role !== 'admin' && (
-            <button
-              onClick={() => onViewChange('workspace')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                currentView === 'workspace' 
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <Briefcase className="h-5 w-5" />
-              <span>Workspace</span>
-            </button>
-          )}
+            )}
+            
             {user.role === 'admin' && (
               <button
                 onClick={() => onViewChange('admin')}

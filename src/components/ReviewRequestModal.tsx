@@ -21,6 +21,20 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
     setAction('review');
   };
 
+  const handleApproveClick = () => {
+    setAction('approve');
+    // Auto-scroll to approval notes after a short delay to allow DOM update
+    setTimeout(() => {
+      const approvalSection = document.getElementById('approval-notes-section');
+      if (approvalSection) {
+        approvalSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100);
+  };
+
   const handleApprove = () => {
     approveRequest(requestId, notes);
     onClose();
@@ -184,7 +198,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             <div className="space-y-4">
               <div className="flex items-center justify-center space-x-4">
                 <button
-                  onClick={() => setAction('approve')}
+                  onClick={handleApproveClick}
                   className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
                     action === 'approve' 
                       ? 'bg-green-600 text-white' 
@@ -208,7 +222,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
               </div>
 
               {action === 'approve' && (
-                <div>
+                <div id="approval-notes-section">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Approval Notes (Optional)
                   </label>
