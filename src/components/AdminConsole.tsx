@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../App';
-import { Users, Settings, Shield, Activity, Plus, Edit, Trash2, User as UserIcon, Calendar, FileText, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Users, Settings, Shield, Activity, Plus, Edit, Trash2, User as UserIcon, Calendar, FileText, AlertTriangle, CheckCircle, XCircle, Clock, X, Save } from 'lucide-react';
 import { supabase, fetchAuditLogs, fetchUsersForRole, User as DatabaseUser } from '../lib/supabase';
 
 interface AdminConsoleProps {
@@ -28,6 +28,12 @@ export function AdminConsole({ user }: AdminConsoleProps) {
   const [auditLogs, setAuditLogs] = useState<AuditLogType[]>([]);
   const [loadingAuditLogs, setLoadingAuditLogs] = useState(false);
   const [auditLogError, setAuditLogError] = useState<string | null>(null);
+  
+  // User management states
+  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<DatabaseUser>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [savingUser, setSavingUser] = useState(false);
 
   // Fetch users when component mounts or when users tab is selected
   useEffect(() => {
@@ -156,6 +162,78 @@ export function AdminConsole({ user }: AdminConsoleProps) {
     return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
+  const handleEditUser = (userToEdit: DatabaseUser) => {
+    setEditingUser(userToEdit.id);
+    setEditForm({
+      full_name: userToEdit.full_name,
+      email: userToEdit.email,
+      username: userToEdit.username,
+      role: userToEdit.role,
+      department: userToEdit.department,
+      status: userToEdit.status
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditForm({});
+  };
+
+  const handleSaveUser = async () => {
+    if (!editingUser || !editForm) return;
+
+    setSavingUser(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          full_name: editForm.full_name,
+          email: editForm.email,
+          username: editForm.username,
+          role: editForm.role,
+          department: editForm.department,
+          status: editForm.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingUser);
+
+      if (error) throw error;
+
+      // Refresh users list
+      const data = await fetchUsersForRole(user);
+      setUsers(data);
+      
+      // Reset editing state
+      setEditingUser(null);
+      setEditForm({});
+    } catch (error) {
+      console.error('Error updating user:', error);
+      setUserError('Failed to update user. Please try again.');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) throw error;
+
+      // Refresh users list
+      const data = await fetchUsersForRole(user);
+      setUsers(data);
+      
+      setShowDeleteConfirm(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      setUserError('Failed to delete user. Please try again.');
+    }
+  };
+
   const UserManagement = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -186,39 +264,131 @@ export function AdminConsole({ user }: AdminConsoleProps) {
             <tbody className="bg-white divide-y divide-gray-200">
               {users.map(userAccount => (
                 <tr key={userAccount.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{userAccount.full_name}</div>
-                      <div className="text-sm text-gray-500">{userAccount.email}</div>
-                      <div className="text-xs text-gray-400">@{userAccount.username}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(userAccount.role)}`}>
-                      {userAccount.role.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {userAccount.department}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(userAccount.status)}`}>
-                      {userAccount.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {userAccount.lastLogin ? new Date(userAccount.lastLogin).toLocaleString() : 'Never'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className="text-blue-600 hover:text-blue-700">
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button className="text-red-600 hover:text-red-700">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
+                  {editingUser === userAccount.id ? (
+                    <>
+                      <td className="px-6 py-4">
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={editForm.full_name || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                            className="w-full text-sm font-medium text-gray-900 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            placeholder="Full Name"
+                          />
+                          <input
+                            type="email"
+                            value={editForm.email || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full text-sm text-gray-500 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            placeholder="Email"
+                          />
+                          <input
+                            type="text"
+                            value={editForm.username || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, username: e.target.value }))}
+                            className="w-full text-xs text-gray-400 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            placeholder="Username"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={editForm.role || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value as DatabaseUser['role'] }))}
+                          className="w-full text-xs font-medium border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        >
+                          <option value="initiator">Initiator</option>
+                          <option value="supervisor">Supervisor</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4">
+                        <input
+                          type="text"
+                          value={editForm.department || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
+                          className="w-full text-sm text-gray-900 border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="Department"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <select
+                          value={editForm.status || ''}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value as DatabaseUser['status'] }))}
+                          className="w-full text-xs font-medium border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        >
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {userAccount.last_login ? new Date(userAccount.last_login).toLocaleString() : 'Never'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={handleSaveUser}
+                            disabled={savingUser}
+                            className="text-green-600 hover:text-green-700 disabled:text-green-400"
+                            title="Save changes"
+                          >
+                            <Save className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="text-gray-600 hover:text-gray-700"
+                            title="Cancel editing"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{userAccount.full_name}</div>
+                          <div className="text-sm text-gray-500">{userAccount.email}</div>
+                          <div className="text-xs text-gray-400">@{userAccount.username}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(userAccount.role)}`}>
+                          {userAccount.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {userAccount.department}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(userAccount.status)}`}>
+                          {userAccount.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {userAccount.last_login ? new Date(userAccount.last_login).toLocaleString() : 'Never'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleEditUser(userAccount)}
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Edit user"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setShowDeleteConfirm(userAccount.id)}
+                            className="text-red-600 hover:text-red-700"
+                            title="Delete user"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
