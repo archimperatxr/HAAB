@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, XIcon, AlertCircle, FileText } from 'lucide-react';
+import { X, Check, XIcon, AlertCircle, FileText, Image, Eye } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
 
 interface ReviewRequestModalProps {
@@ -12,6 +12,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
   const [action, setAction] = useState<'review' | 'approve' | 'reject'>('review');
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [viewingAttachment, setViewingAttachment] = useState<{name: string, type: string, data: string} | null>(null);
 
   const request = requests.find(req => req.id === requestId);
   if (!request) return null;
@@ -47,8 +48,34 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
     }
   };
 
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <Image className="h-4 w-4 text-blue-600" />;
+    }
+    return <FileText className="h-4 w-4 text-red-600" />;
+  };
+
+  const handleViewAttachment = (attachment: {name: string, type: string, data: string}) => {
+    setViewingAttachment(attachment);
+  };
+
+  // Parse attachments if they're stored as JSON string
+  const attachments = React.useMemo(() => {
+    if (!request.attachments) return [];
+    if (Array.isArray(request.attachments)) return request.attachments;
+    if (typeof request.attachments === 'string') {
+      try {
+        return JSON.parse(request.attachments);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  }, [request.attachments]);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -181,6 +208,35 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             </div>
           </div>
 
+          {/* Attachments */}
+          {attachments && attachments.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="space-y-2">
+                  {attachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div className="flex items-center space-x-3">
+                        {getFileIcon(attachment.type)}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
+                          <p className="text-xs text-gray-500">{attachment.type}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleViewAttachment(attachment)}
+                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
           {request.status === 'pending' && (
             <div className="flex items-center justify-center space-x-4 mb-6">
@@ -284,6 +340,43 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
           )}
         </div>
       </div>
-    </div>
+      
+      {/* Attachment Viewer Modal */}
+      {viewingAttachment && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
+              <button
+                onClick={() => setViewingAttachment(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
+              {viewingAttachment.type.startsWith('image/') ? (
+                <img
+                  src={viewingAttachment.data}
+                  alt={viewingAttachment.name}
+                  className="max-w-full h-auto mx-auto rounded-lg"
+                />
+              ) : viewingAttachment.type === 'application/pdf' ? (
+                <iframe
+                  src={viewingAttachment.data}
+                  className="w-full h-[600px] border-0 rounded-lg"
+                  title={viewingAttachment.name}
+                />
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Preview not available for this file type</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

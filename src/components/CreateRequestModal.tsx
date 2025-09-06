@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, AlertCircle } from 'lucide-react';
+import { X, Upload, AlertCircle, FileText, Image, Trash2 } from 'lucide-react';
 import { User } from '../App';
 import { useWorkflow, UpdateRequest } from '../context/WorkflowContext';
 import { fetchUsersForRole, User as DatabaseUser } from '../lib/supabase';
@@ -22,9 +22,10 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
     customer_instruction: '',
     priority: 'medium' as UpdateRequest['priority'],
     assigned_supervisor_id: '',
-    attachments: [] as string[]
+    attachments: [] as Array<{name: string, type: string, data: string}>
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState(false);
 
   // Fetch supervisors when component mounts
   React.useEffect(() => {
@@ -129,6 +130,67 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
         [field]: value
       }
     }));
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    setUploading(true);
+    const newAttachments: Array<{name: string, type: string, data: string}> = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setErrors(prev => ({ ...prev, attachments: `File ${file.name} is not supported. Only images (JPEG, PNG, GIF) and PDFs are allowed.` }));
+        continue;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, attachments: `File ${file.name} is too large. Maximum size is 5MB.` }));
+        continue;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      const fileData = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      newAttachments.push({
+        name: file.name,
+        type: file.type,
+        data: fileData
+      });
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      attachments: [...prev.attachments, ...newAttachments]
+    }));
+    
+    setUploading(false);
+    // Clear the input
+    event.target.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, i) => i !== index)
+    }));
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) {
+      return <Image className="h-4 w-4 text-blue-600" />;
+    }
+    return <FileText className="h-4 w-4 text-red-600" />;
   };
 
   return (
@@ -336,15 +398,63 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Supporting Documents
                   </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                     <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600 mb-2">Upload customer instruction documents</p>
-                    <button
-                      type="button"
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      Browse Files
-                    </button>
+                      <p className="text-xs text-gray-500 mb-3">Supported: Images (JPEG, PNG, GIF) and PDF files (max 5MB each)</p>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="file-upload"
+                        disabled={uploading}
+                      />
+                      <label
+                        htmlFor="file-upload"
+                        className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white ${
+                          uploading 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                        } transition-colors`}
+                      >
+                        {uploading ? 'Uploading...' : 'Browse Files'}
+                      </label>
+                    </div>
+
+                    {/* Display uploaded files */}
+                    {formData.attachments.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-700">Uploaded Files:</h4>
+                        {formData.attachments.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center space-x-3">
+                              {getFileIcon(file.type)}
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                <p className="text-xs text-gray-500">{file.type}</p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(index)}
+                              className="text-red-600 hover:text-red-700 p-1"
+                              title="Remove file"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {errors.attachments && (
+                      <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                        {errors.attachments}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -393,6 +503,20 @@ export function CreateRequestModal({ user, onClose }: CreateRequestModalProps) {
                     <span className="text-sm font-medium text-gray-700">Customer Instruction:</span>
                     <p className="text-gray-900 mt-1">{formData.customer_instruction}</p>
                   </div>
+                  
+                  {formData.attachments.length > 0 && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Attachments:</span>
+                      <div className="mt-2 space-y-1">
+                        {formData.attachments.map((file, index) => (
+                          <div key={index} className="flex items-center space-x-2 text-sm">
+                            {getFileIcon(file.type)}
+                            <span className="text-gray-700">{file.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
