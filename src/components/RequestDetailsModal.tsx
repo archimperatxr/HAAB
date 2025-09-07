@@ -37,7 +37,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
   };
 
   const getFileIcon = (type: string) => {
-    if (type && type.startsWith('image/')) {
+    if (type && typeof type === 'string' && type.startsWith('image/')) {
       return <Image className="h-4 w-4 text-blue-600" />;
     }
     return <FileText className="h-4 w-4 text-red-600" />;
@@ -207,14 +207,14 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
                         {attachments.map((attachment, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
                             <div className="flex items-center space-x-3">
-                              {getFileIcon(attachment.type)}
+                              {getFileIcon(attachment?.type || '')}
                               <div>
-                                <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
-                                <p className="text-xs text-gray-500">{attachment.type}</p>
+                                <p className="text-sm font-medium text-gray-900">{attachment?.name || 'Unknown file'}</p>
+                                <p className="text-xs text-gray-500">{attachment?.type || 'Unknown type'}</p>
                               </div>
                             </div>
                             <button
-                              onClick={() => handleViewAttachment(attachment)}
+                              onClick={() => attachment && handleViewAttachment(attachment)}
                               className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
                             >
                               <Eye className="h-4 w-4" />
@@ -301,7 +301,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
               </button>
             </div>
             <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
-              {viewingAttachment.type.startsWith('image/') ? (
+              {viewingAttachment.type && viewingAttachment.type.startsWith('image/') ? (
                 <img
                   src={viewingAttachment.data}
                   alt={viewingAttachment.name}
