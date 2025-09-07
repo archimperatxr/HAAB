@@ -96,7 +96,7 @@ export function WorkflowProvider({
           assigned_supervisor_id: requestData.assigned_supervisor_id,
           status: requestData.status,
           priority: requestData.priority,
-          attachments: JSON.stringify(requestData.attachments)
+          attachments: requestData.attachments
         })
         .select()
         .single();
