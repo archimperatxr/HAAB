@@ -36,7 +36,7 @@ export interface UpdateRequest {
   priority: 'low' | 'medium' | 'high';
   review_notes?: string;
   rejection_reason?: string;
-  attachments: Array<{name: string, type: string, data: string}>;
+  attachments: Array<{name: string, type: string, data: string}> | string;
   created_at: string;
   updated_at: string;
   // Joined fields
