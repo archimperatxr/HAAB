@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, XIcon, AlertCircle, FileText, Image, Eye } from 'lucide-react';
+import { X, Check, XIcon, AlertCircle, FileText, Image, Eye, User, Briefcase, Tag, Paperclip } from 'lucide-react';
 import { useWorkflow } from '../context/WorkflowContext';
 
 interface ReviewRequestModalProps {
@@ -17,6 +17,15 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
   const request = requests.find(req => req.id === requestId);
   if (!request) return null;
 
+  // Function to get priority color
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default: return 'bg-green-100 text-green-800 border-green-200';
+    }
+  };
+
   const handleStartReview = () => {
     updateRequest(requestId, { status: 'in_review' });
     setAction('review');
@@ -24,16 +33,6 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
 
   const handleApproveClick = () => {
     setAction('approve');
-    // Auto-scroll to approval notes after a short delay to allow DOM update
-    setTimeout(() => {
-      const approvalSection = document.getElementById('approval-notes-section');
-      if (approvalSection) {
-        approvalSection.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
-        });
-      }
-    }, 100);
   };
 
   const handleApprove = () => {
@@ -48,318 +47,229 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
     }
   };
 
-  const getFileIcon = (type: string) => {
-    if (type && typeof type === 'string' && type.startsWith('image/')) {
-      return <Image className="h-4 w-4 text-blue-600" />;
-    }
-    return <FileText className="h-4 w-4 text-red-600" />;
+  // Helper for displaying fields to update
+  const formatFieldName = (name: string) => {
+    return name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
   };
-
-  const handleViewAttachment = (attachment: {name: string, type: string, data: string}) => {
-    setViewingAttachment(attachment);
-  };
-
-  // Parse attachments if they're stored as JSON string
-  const attachments = React.useMemo(() => {
-    if (!request.attachments) return [];
-    
-    // If it's already an array, return it
-    if (Array.isArray(request.attachments)) {
-      return request.attachments;
-    }
-    
-    // If it's a string, try to parse it as JSON
-    if (typeof request.attachments === 'string') {
-      try {
-        const parsed = JSON.parse(request.attachments);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (error) {
-        console.error('Error parsing attachments JSON:', error);
-        return [];
-      }
-    }
-    
-    // If it's an object but not an array, wrap it in an array
-    if (typeof request.attachments === 'object') {
-      return [request.attachments];
-    }
-    
-    return [];
-  }, [request.attachments]);
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-100 rounded-lg p-2">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Review Request #{request.id}</h2>
-                <p className="text-gray-600">{request.customer_name}</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-semibold text-gray-900">Review Request</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
-          <div className="p-6">
-            {/* Request Status */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${
-                  request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                  request.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                  request.status === 'in_review' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-blue-100 text-blue-800'
-                }`}>
-                  {request.status.replace('_', ' ').toUpperCase()}
-                </span>
-                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                  request.priority === 'high' ? 'bg-red-100 text-red-800' :
-                  request.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-green-100 text-green-800'
-                }`}>
-                  {request.priority.toUpperCase()} PRIORITY
-                </span>
-              </div>
-            </div>
-
-            {/* Request Details Grid */}
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Information</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex space-x-6">
+            {/* Request Details Section */}
+            <div className="flex-1 space-y-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Request Information</h3>
+                <dl className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <User className="h-5 w-5 text-gray-500" />
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Name:</span>
-                      <p className="text-gray-900">{request.customer_name}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Account Number:</span>
-                      <p className="text-gray-900 font-mono">{request.account_number}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Update Type:</span>
-                      <p className="text-gray-900 capitalize">{request.update_type.replace('_', ' ')}</p>
+                      <dt className="text-sm font-medium text-gray-500">Customer Name</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{request.customer_name}</dd>
                     </div>
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Request Information</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Paperclip className="h-5 w-5 text-gray-500" />
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Initiated by:</span>
-                      <p className="text-gray-900">{request.initiator?.full_name}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Created:</span>
-                      <p className="text-gray-900">{new Date(request.created_at).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-700">Last Updated:</span>
-                      <p className="text-gray-900">{new Date(request.updated_at).toLocaleString()}</p>
+                      <dt className="text-sm font-medium text-gray-500">Account Number</dt>
+                      <dd className="mt-1 text-sm text-gray-900">{request.account_number}</dd>
                     </div>
                   </div>
-                </div>
+                  <div className="flex items-center space-x-3">
+                    <Briefcase className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Request Type</dt>
+                      <dd className="mt-1 text-sm text-gray-900 capitalize">
+                        {request.update_type.replace(/_/g, ' ')}
+                      </dd>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <Tag className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <dt className="text-sm font-medium text-gray-500">Priority</dt>
+                      <dd className={`mt-1 text-xs font-semibold px-2 py-1 rounded-full w-fit ${getPriorityColor(request.priority)}`}>
+                        {request.priority.toUpperCase()}
+                      </dd>
+                    </div>
+                  </div>
+                </dl>
               </div>
 
+              {/* Fields to Update */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Proposed Changes</h3>
+                <dl className="space-y-3">
+                  {Object.entries(request.fields_to_update).map(([key, value]) => (
+                    <div key={key} className="flex justify-between items-center text-sm">
+                      <dt className="font-medium text-gray-700">{formatFieldName(key)}:</dt>
+                      <dd className="text-gray-900">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+
+              {/* Customer Instruction and Attachments */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Fields to Update</h3>
-                  <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-                    {Object.entries(request.fields_to_update).map(([field, value]) => 
-                      value && (
-                        <div key={field} className="flex justify-between items-start">
-                          <span className="text-sm font-medium text-gray-700 capitalize">
-                            {field.replace(/([A-Z])/g, ' $1')}:
-                          </span>
-                          <span className="text-sm text-gray-900 text-right max-w-xs break-words">
-                            {value}
-                          </span>
+                  <h3 className="text-lg font-semibold text-gray-900">Customer Instruction</h3>
+                  <p className="mt-2 text-gray-700 italic border-l-4 border-gray-200 pl-4">{request.customer_instruction}</p>
+                </div>
+                {request.attachments && request.attachments.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Attachments</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {request.attachments.map((attachment, index) => (
+                        <div key={index} className="flex items-center bg-gray-100 rounded-lg p-2">
+                          <Paperclip className="h-4 w-4 text-gray-500 mr-2" />
+                          <span className="text-sm text-gray-700">{`Attachment ${index + 1}`}</span>
+                          <button
+                            onClick={() => setViewingAttachment({
+                              name: `Attachment ${index + 1}`,
+                              type: 'application/octet-stream', // Mock type
+                              data: attachment, // The URL/data
+                            })}
+                            className="ml-2 text-blue-600 hover:text-blue-700"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
                         </div>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {request.review_notes && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Previous Review Notes</h3>
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <p className="text-sm text-green-800">{request.review_notes}</p>
-                    </div>
-                  </div>
-                )}
-
-                {request.rejection_reason && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">Rejection Reason</h3>
-                    <div className="bg-red-50 rounded-lg p-4">
-                      <p className="text-sm text-red-800">{request.rejection_reason}</p>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Customer Instruction */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Customer Instruction</h3>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start space-x-2">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <p className="text-yellow-800">{request.customer_instruction}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Attachments */}
-            {attachments && attachments.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2">
-                    {attachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                        <div className="flex items-center space-x-3">
-                          {getFileIcon(attachment?.type || '')}
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{attachment?.name || 'Unknown file'}</p>
-                            <p className="text-xs text-gray-500">{attachment?.type || 'Unknown type'}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => attachment && handleViewAttachment(attachment)}
-                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>View</span>
-                        </button>
-                      </div>
-                    ))}
+            {/* Review Action Section */}
+            <div className="w-96 p-6 border-l border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Review Action</h3>
+              {/* Conditional rendering based on request status */}
+              {request.status === 'pending' || request.status === 'draft' ? (
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 mt-1" />
+                  <div>
+                    <p className="font-medium">Request pending review</p>
+                    <p className="text-sm mt-1">Please start the review process to proceed.</p>
+                    <button
+                      onClick={handleStartReview}
+                      className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Start Review
+                    </button>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            {request.status === 'pending' && (
-              <div className="flex items-center justify-center space-x-4 mb-6">
-                <button
-                  onClick={handleStartReview}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2"
-                >
-                  <FileText className="h-5 w-5" />
-                  <span>Start Review</span>
-                </button>
-              </div>
-            )}
-
-            {request.status === 'in_review' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-center space-x-4">
-                  <button
-                    onClick={handleApproveClick}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                      action === 'approve' 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
-                  >
-                    <Check className="h-5 w-5" />
-                    <span>Approve</span>
-                  </button>
-                  <button
-                    onClick={() => setAction('reject')}
-                    className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                      action === 'reject' 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-red-100 text-red-700 hover:bg-red-200'
-                    }`}
-                  >
-                    <XIcon className="h-5 w-5" />
-                    <span>Reject</span>
-                  </button>
-                </div>
-
-                {action === 'approve' && (
-                  <div id="approval-notes-section">
+              ) : (
+                <div className="space-y-6">
+                  {/* Notes input */}
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Approval Notes (Optional)
+                      Reviewer Notes
                     </label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none"
-                      placeholder="Add any notes about the approval..."
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                      placeholder="Add your notes here..."
                     />
-                    <div className="mt-4 flex items-center justify-end space-x-3">
-                      <button
-                        onClick={() => setAction('review')}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleApprove}
-                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-                      >
-                        Confirm Approval
-                      </button>
-                    </div>
                   </div>
-                )}
 
-                {action === 'reject' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rejection Reason *
-                    </label>
-                    <textarea
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
-                      placeholder="Please explain why this request is being rejected..."
-                      required
-                    />
-                    <div className="mt-4 flex items-center justify-end space-x-3">
+                  {/* Action buttons */}
+                  {action === 'review' && (
+                    <div className="flex items-center space-x-3">
                       <button
-                        onClick={() => setAction('review')}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                        onClick={handleApproveClick}
+                        className="flex-1 flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                       >
-                        Cancel
+                        <Check className="h-5 w-5" />
+                        <span>Approve</span>
                       </button>
                       <button
-                        onClick={handleReject}
-                        disabled={!rejectionReason.trim()}
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        onClick={() => setAction('reject')}
+                        className="flex-1 flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                       >
-                        Confirm Rejection
+                        <XIcon className="h-5 w-5" />
+                        <span>Reject</span>
                       </button>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+
+                  {/* Approve confirmation */}
+                  {action === 'approve' && (
+                    <div id="approval-notes-section">
+                      <div className="mt-4 flex items-center justify-end space-x-3">
+                        <button
+                          onClick={() => setAction('review')}
+                          className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleApprove}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          Confirm Approval
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reject form */}
+                  {action === 'reject' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Rejection Reason *
+                      </label>
+                      <textarea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                        placeholder="Please explain why this request is being rejected..."
+                        required
+                      />
+                      <div className="mt-4 flex items-center justify-end space-x-3">
+                        <button
+                          onClick={() => setAction('review')}
+                          className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleReject}
+                          disabled={!rejectionReason.trim()}
+                          className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          Confirm Rejection
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      
-      {/* Attachment Viewer Modal */}
+
+      {/* Attachment Preview Modal */}
       {viewingAttachment && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-auto overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
               <button
@@ -369,29 +279,18 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
-              {viewingAttachment.type && viewingAttachment.type.startsWith('image/') ? (
-                <img
-                  src={viewingAttachment.data}
-                  alt={viewingAttachment.name}
-                  className="max-w-full h-auto mx-auto rounded-lg"
-                />
-              ) : viewingAttachment.type === 'application/pdf' ? (
-                <iframe
-                  src={viewingAttachment.data}
-                  className="w-full h-[600px] border-0 rounded-lg"
-                  title={viewingAttachment.name}
-                />
-              ) : (
+            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto flex items-center justify-center">
+              {viewingAttachment.data && (
                 <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Preview not available for this file type</p>
+                  <p className="text-gray-600">Attachment preview is not fully implemented.</p>
+                  <p className="text-sm text-gray-500 mt-2">Data URL: {viewingAttachment.data.substring(0, 50)}...</p>
                 </div>
               )}
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
