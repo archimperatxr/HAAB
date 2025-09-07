@@ -37,7 +37,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
   };
 
   const getFileIcon = (type: string) => {
-    if (type.startsWith('image/')) {
+    if (type && type.startsWith('image/')) {
       return <Image className="h-4 w-4 text-blue-600" />;
     }
     return <FileText className="h-4 w-4 text-red-600" />;
