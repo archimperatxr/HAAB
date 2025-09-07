@@ -49,6 +49,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
 
   // Parse attachments if they're stored as JSON string
   const attachments = React.useMemo(() => {
+    console.log('this is the attachment: ' + attachments);
     if (!request.attachments) return [];
     
     // If it's already an array, return it
@@ -60,6 +61,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
     if (typeof request.attachments === 'string') {
       try {
         const parsed = JSON.parse(request.attachments);
+        console.log('this is the parsed attachment JSON: ' + parsed);
         return Array.isArray(parsed) ? parsed : [];
       } catch (error) {
         console.error('Error parsing attachments JSON:', error);
