@@ -166,35 +166,48 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
           )}
 
           {/* Attachments */}
-          {attachments.length > 0 && (
+          {request.attachments && request.attachments.length > 0 && (
             <div className="space-y-4 border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900">Attachments</h3>
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {attachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        {getFileIcon(attachment?.type)}
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
-                            {attachment?.name || 'Unknown file'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {attachment?.type || 'Unknown type'}
-                          </p>
-                        </div>
+                  {request.attachments.map((attachmentString, index) => (
+					try {
+					const attachment = JSON.parse(attachmentString);
+					return (
+					  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+					    <div className="flex items-center space-x-3">
+					  	{getFileIcon(attachment?.type)}
+					  	<div>
+					  	  <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+					  		{attachment?.name || 'Unknown file'}
+					  	  </p>
+					  	  <p className="text-xs text-gray-500">
+					  		{attachment?.type || 'Unknown type'}
+					  	  </p>
+					  	</div>
+					    </div>
+					    {attachment && (
+					  	<button
+					  	  onClick={() => setViewingAttachment(attachment)}
+					  	  className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
+					  	>
+					  	  <Eye className="h-4 w-4" />
+					  	  <span>View</span>
+					  	</button>
+					    )}
+					  </div>
+					  );
+                  } catch (error) {
+					console.error('Error parsing attachment data:', error);
+                    return (
+                      <div key={index} className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
+                        <span className="text-sm text-red-800">Invalid attachment</span>
                       </div>
-                      {attachment && (
-                        <button
-                          onClick={() => setViewingAttachment(attachment)}
-                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>View</span>
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                    );
+				  }
+				  ))}
                 </div>
               </div>
             </div>
