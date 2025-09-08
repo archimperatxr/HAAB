@@ -171,7 +171,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
               <h3 className="text-lg font-semibold text-gray-900">Attachments</h3>
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {request.attachments.map((attachmentString, index) => (
+                  {request.attachments.map((attachmentString, index) => {
 					try {
 					const attachment = JSON.parse(attachmentString);
 					return (
@@ -207,7 +207,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
                       </div>
                     );
 				  }
-				  ))}
+				  })}
                 </div>
               </div>
             </div>
