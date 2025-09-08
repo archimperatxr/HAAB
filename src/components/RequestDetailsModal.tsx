@@ -43,6 +43,15 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
     }
   };
 
+  const attachments = request.attachments || [];
+
+  const getFileIcon = (type: string) => {
+    if (type && type.startsWith('image/')) {
+      return <Image className="h-5 w-5 text-blue-600" />;
+    }
+    return <FileText className="h-5 w-5 text-gray-600" />;
+  };
+
   // Helper function to render a detail item with an icon
   const DetailItem = ({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | undefined }) => {
     if (!value) return null; // Don't render if value is empty or undefined
@@ -209,7 +218,7 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
                       <p className="text-sm text-gray-600 mt-1">by {request.initiator.full_name}</p>
                     </div>
                   </div>
-                })}
+                )}
                 
                 {request.assigned_supervisor && (
                   <div className="flex items-start space-x-4">
@@ -263,10 +272,10 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end p-6 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
+            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
           >
             Close
           </button>
@@ -275,39 +284,34 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
       
       {/* Attachment Viewer Modal */}
       {viewingAttachment && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl max-h-[90vh] w-full overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                {getFileIcon(viewingAttachment.type)}
-                <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
               <button
                 onClick={() => setViewingAttachment(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-6 max-h-[calc(90vh-120px)] overflow-auto bg-gray-50">
+            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
               {viewingAttachment.type && viewingAttachment.type.startsWith('image/') ? (
                 <img
                   src={viewingAttachment.data}
                   alt={viewingAttachment.name}
-                  className="max-w-full h-auto mx-auto rounded-lg shadow-lg bg-white"
+                  className="max-w-full h-auto mx-auto rounded-lg"
                 />
               ) : viewingAttachment.type === 'application/pdf' ? (
                 <iframe
                   src={viewingAttachment.data}
-                  className="w-full h-[600px] border-0 rounded-lg shadow-lg"
+                  className="w-full h-[600px] border-0 rounded-lg"
                   title={viewingAttachment.name}
                 />
               ) : (
-                <div className="text-center py-16 bg-white rounded-lg">
+                <div className="text-center py-12">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Preview Not Available</h3>
-                  <p className="text-gray-600">This file type cannot be previewed in the browser</p>
-                  <p className="text-sm text-gray-500 mt-2">File type: {viewingAttachment.type}</p>
+                  <p className="text-gray-600">Preview not available for this file type</p>
                 </div>
               )}
             </div>
