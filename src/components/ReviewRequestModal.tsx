@@ -228,12 +228,15 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             </div>
 
             {/* Attachments */}
-            {attachments.length > 0 && (
+            {request.attachments && request.attachments.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h3>
                 <div className="bg-white border border-gray-200 rounded-xl p-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {attachments.map((attachment, index) => (
+                    {request.attachments.map((attachmentString, index) => {
+					  try {
+					  const attachment = JSON.parse(attachmentString);
+					  return (
                       <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                         <div className="flex items-center space-x-3">
                           {getFileIcon(attachment?.type)}
@@ -256,7 +259,16 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                           </button>
                         )}
                       </div>
-                    ))}
+					  } catch (error) {
+					console.error('Error parsing attachment data:', error);
+                    return (
+                      <div key={index} className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg">
+                        <AlertCircle className="h-6 w-6 text-red-500" />
+                        <span className="text-sm text-red-800">Invalid attachment</span>
+                      </div>
+                    );
+				  }
+                    })}
                   </div>
                 </div>
               </div>
