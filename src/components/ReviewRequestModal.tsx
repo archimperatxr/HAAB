@@ -259,6 +259,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
                           </button>
                         )}
                       </div>
+					  )
 					  } catch (error) {
 					console.error('Error parsing attachment data:', error);
                     return (
