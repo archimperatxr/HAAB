@@ -157,91 +157,116 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
           )}
 
           {/* Attachments */}
-          {request.attachments && request.attachments.length > 0 && (
+          {attachments.length > 0 && (
             <div className="space-y-4 border-t border-gray-200 pt-6">
               <h3 className="text-lg font-semibold text-gray-900">Attachments</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {request.attachments.map((attachmentString, index) => {
-                  try {
-                    const attachment = JSON.parse(attachmentString);
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => setViewingAttachment(attachment)}
-                        className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <FileText className="h-6 w-6 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-900 truncate">{attachment.name}</span>
-                      </button>
-                    );
-                  } catch (error) {
-                    console.error('Error parsing attachment data:', error);
-                    return (
-                      <div key={index} className="flex items-center space-x-3 p-4 bg-red-50 rounded-lg">
-                        <AlertCircle className="h-6 w-6 text-red-500" />
-                        <span className="text-sm text-red-800">Invalid attachment</span>
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {attachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        {getFileIcon(attachment?.type)}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                            {attachment?.name || 'Unknown file'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {attachment?.type || 'Unknown type'}
+                          </p>
+                        </div>
                       </div>
-                    );
-                  }
-                })}
+                      {attachment && (
+                        <button
+                          onClick={() => setViewingAttachment(attachment)}
+                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>View</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Audit Trail */}
+          {/* Request Timeline - Enhanced Design */}
           <div className="space-y-4 border-t border-gray-200 pt-6">
             <h3 className="text-lg font-semibold text-gray-900">Request Timeline</h3>
-            <div className="space-y-4">
-              {request.initiator && (
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <User className="h-5 w-5 text-blue-600" />
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="space-y-6">
+                {request.initiator && (
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-blue-100 p-3 rounded-full">
+                      <User className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">Request Initiated</p>
+                        <p className="text-xs text-gray-500">{new Date(request.created_at).toLocaleString()}</p>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">by {request.initiator.full_name}</p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Request Initiated by {request.initiator.full_name}</p>
-                    <p className="text-xs text-gray-600">{new Date(request.created_at).toLocaleString()}</p>
+                })}
+                
+                {request.assigned_supervisor && (
+                  <div className="flex items-start space-x-4">
+                    <div className="bg-purple-100 p-3 rounded-full">
+                      <User className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">Assigned to Supervisor</p>
+                        <p className="text-xs text-gray-500">
+                          {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{request.assigned_supervisor.full_name}</p>
+                    </div>
                   </div>
-                </div>
-              )}
-              
-              {request.assigned_supervisor && (
-                <div className="flex items-center space-x-3">
-                  <div className="bg-purple-100 p-2 rounded-full">
-                    <User className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Assigned to {request.assigned_supervisor.full_name}</p>
-                    <p className="text-xs text-gray-600">
-                      {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-              )}
+                )}
 
-              {request.status !== 'draft' && request.status !== 'pending' && (
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-full ${getStatusColor(request.status).split(' ')[0]}`}>
-                    {getStatusIcon(request.status)}
+                {request.status !== 'draft' && request.status !== 'pending' && (
+                  <div className="flex items-start space-x-4">
+                    <div className={`p-3 rounded-full ${
+                      request.status === 'approved' ? 'bg-green-100' :
+                      request.status === 'rejected' ? 'bg-red-100' :
+                      'bg-yellow-100'
+                    }`}>
+                      {getStatusIcon(request.status)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {request.status === 'approved' ? 'Request Approved' :
+                            request.status === 'rejected' ? 'Request Rejected' :
+                            'Review Started'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
+                        </p>
+                      </div>
+                      {request.status === 'approved' && request.review_notes && (
+                        <p className="text-sm text-gray-600 mt-1">Notes: {request.review_notes}</p>
+                      )}
+                      {request.status === 'rejected' && request.rejection_reason && (
+                        <p className="text-sm text-gray-600 mt-1">Reason: {request.rejection_reason}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {request.status === 'approved' ? 'Request Approved' :
-                        request.status === 'rejected' ? 'Request Rejected' :
-                        'Review Started'}
-                    </p>
-                    <p className="text-xs text-gray-600">{request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}</p>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end p-6 border-t border-gray-200">
+        <div className="flex items-center justify-end p-6 border-t border-gray-200 bg-gray-50">
           <button
             onClick={onClose}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
           >
             Close
           </button>
@@ -250,34 +275,39 @@ export function RequestDetailsModal({ request, onClose }: RequestDetailsModalPro
       
       {/* Attachment Viewer Modal */}
       {viewingAttachment && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-5xl max-h-[90vh] w-full overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
+              <div className="flex items-center space-x-3">
+                {getFileIcon(viewingAttachment.type)}
+                <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
+              </div>
               <button
                 onClick={() => setViewingAttachment(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
+            <div className="p-6 max-h-[calc(90vh-120px)] overflow-auto bg-gray-50">
               {viewingAttachment.type && viewingAttachment.type.startsWith('image/') ? (
                 <img
                   src={viewingAttachment.data}
                   alt={viewingAttachment.name}
-                  className="max-w-full h-auto mx-auto rounded-lg"
+                  className="max-w-full h-auto mx-auto rounded-lg shadow-lg bg-white"
                 />
               ) : viewingAttachment.type === 'application/pdf' ? (
                 <iframe
                   src={viewingAttachment.data}
-                  className="w-full h-[600px] border-0 rounded-lg"
+                  className="w-full h-[600px] border-0 rounded-lg shadow-lg"
                   title={viewingAttachment.name}
                 />
               ) : (
-                <div className="text-center py-12">
+                <div className="text-center py-16 bg-white rounded-lg">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Preview not available for this file type</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Preview Not Available</h3>
+                  <p className="text-gray-600">This file type cannot be previewed in the browser</p>
+                  <p className="text-sm text-gray-500 mt-2">File type: {viewingAttachment.type}</p>
                 </div>
               )}
             </div>

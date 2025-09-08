@@ -59,7 +59,7 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
     setViewingAttachment(attachment);
   };
 
-  // Parse attachments if they're stored as JSON string
+  // Enhanced attachment parsing with better error handling
   const attachments = React.useMemo(() => {
     if (!request.attachments) return [];
     
@@ -72,15 +72,20 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
     if (typeof request.attachments === 'string') {
       try {
         const parsed = JSON.parse(request.attachments);
-        return Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+          return parsed;
+        } else if (parsed && typeof parsed === 'object') {
+          return [parsed];
+        }
+        return [];
       } catch (error) {
         console.error('Error parsing attachments JSON:', error);
         return [];
       }
     }
     
-    // If it's an object but not an array, wrap it in an array
-    if (typeof request.attachments === 'object') {
+    // If it's a single object, wrap it in an array
+    if (typeof request.attachments === 'object' && request.attachments !== null) {
       return [request.attachments];
     }
     
@@ -223,27 +228,33 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
             </div>
 
             {/* Attachments */}
-            {attachments && attachments.length > 0 && (
+            {attachments.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Supporting Documents</h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="space-y-2">
+                <div className="bg-white border border-gray-200 rounded-xl p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {attachments.map((attachment, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
                         <div className="flex items-center space-x-3">
-                          {getFileIcon(attachment?.type || '')}
+                          {getFileIcon(attachment?.type)}
                           <div>
-                            <p className="text-sm font-medium text-gray-900">{attachment?.name || 'Unknown file'}</p>
-                            <p className="text-xs text-gray-500">{attachment?.type || 'Unknown type'}</p>
+                            <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                              {attachment?.name || 'Unknown file'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {attachment?.type || 'Unknown type'}
+                            </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => attachment && handleViewAttachment(attachment)}
-                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          <Eye className="h-4 w-4" />
-                          <span>View</span>
-                        </button>
+                        {attachment && (
+                          <button
+                            onClick={() => handleViewAttachment(attachment)}
+                            className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
+                            <span>View</span>
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -358,34 +369,39 @@ export function ReviewRequestModal({ requestId, onClose }: ReviewRequestModalPro
       
       {/* Attachment Viewer Modal */}
       {viewingAttachment && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60">
-          <div className="bg-white rounded-xl shadow-xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-5xl max-h-[90vh] w-full overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
+              <div className="flex items-center space-x-3">
+                {getFileIcon(viewingAttachment.type)}
+                <h3 className="text-lg font-semibold text-gray-900">{viewingAttachment.name}</h3>
+              </div>
               <button
                 onClick={() => setViewingAttachment(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-4 max-h-[calc(90vh-120px)] overflow-auto">
+            <div className="p-6 max-h-[calc(90vh-120px)] overflow-auto bg-gray-50">
               {viewingAttachment.type && viewingAttachment.type.startsWith('image/') ? (
                 <img
                   src={viewingAttachment.data}
                   alt={viewingAttachment.name}
-                  className="max-w-full h-auto mx-auto rounded-lg"
+                  className="max-w-full h-auto mx-auto rounded-lg shadow-lg bg-white"
                 />
               ) : viewingAttachment.type === 'application/pdf' ? (
                 <iframe
                   src={viewingAttachment.data}
-                  className="w-full h-[600px] border-0 rounded-lg"
+                  className="w-full h-[600px] border-0 rounded-lg shadow-lg"
                   title={viewingAttachment.name}
                 />
               ) : (
-                <div className="text-center py-12">
+                <div className="text-center py-16 bg-white rounded-lg">
                   <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Preview not available for this file type</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Preview Not Available</h3>
+                  <p className="text-gray-600">This file type cannot be previewed in the browser</p>
+                  <p className="text-sm text-gray-500 mt-2">File type: {viewingAttachment.type}</p>
                 </div>
               )}
             </div>
